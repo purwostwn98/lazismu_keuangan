@@ -4,6 +4,7 @@
 # Database connection settings, which should be overridden in production environments.
 /app/Config/Database.php
 
+
 # OS X
 .DS_Store
 .AppleDouble
