@@ -370,6 +370,9 @@ $errorMsg = session()->getFlashdata('error')  ?? '';
     const preDebet   = document.getElementById('previewDebet');
     const preKredit  = document.getElementById('previewKredit');
 
+    new TomSelect('#selAkunDebet', { maxOptions: 500, allowEmptyOption: true });
+    new TomSelect('#selRekening',  { maxOptions: 200, allowEmptyOption: true });
+
     function syncPreview() {
         const akunOpt = selAkun.options[selAkun.selectedIndex];
         const rekOpt  = selRek.options[selRek.selectedIndex];

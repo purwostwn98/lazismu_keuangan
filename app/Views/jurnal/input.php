@@ -224,6 +224,11 @@ $old           = fn(string $k, $def = '') => old($k, $def);
             </td>`;
         tbody.appendChild(tr);
 
+        // Tom Select on new row selects
+        tr.querySelectorAll('select').forEach(sel => {
+            new TomSelect(sel, { maxOptions: 500, allowEmptyOption: true });
+        });
+
         // Delete row
         tr.querySelector('.btn-del-row').addEventListener('click', function () {
             if (tbody.rows.length > 2) {

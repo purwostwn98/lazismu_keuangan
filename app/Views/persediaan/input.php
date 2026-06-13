@@ -61,7 +61,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
 
                 <div class="col-sm-6">
                     <label class="form-label small fw-semibold">Akun Persediaan (CoA) <span class="text-danger">*</span></label>
-                    <select name="akun_id" class="form-select form-select-sm" required>
+                    <select name="akun_id" id="persediaanAkunId" class="form-select form-select-sm" required>
                         <option value="">— Pilih Akun —</option>
                         <?php foreach ($akunPersediaan as $a): ?>
                             <option value="<?= $a['id'] ?>" <?= $old('akun_id') == $a['id'] ? 'selected' : '' ?>>
@@ -74,7 +74,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
 
                 <div class="col-sm-6">
                     <label class="form-label small fw-semibold">Sumber Dana Default</label>
-                    <select name="jenis_dana_id" class="form-select form-select-sm">
+                    <select name="jenis_dana_id" id="persediaanJenisDanaId" class="form-select form-select-sm">
                         <option value="">— Pilih Dana (Opsional) —</option>
                         <?php foreach ($jenisDanaList as $jd): ?>
                             <option value="<?= $jd['id'] ?>" <?= $old('jenis_dana_id') == $jd['id'] ? 'selected' : '' ?>>
@@ -103,4 +103,11 @@ $old = fn(string $k, $d = '') => old($k, $d);
     </div>
     </form>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+new TomSelect('#persediaanAkunId',     { maxOptions: 500, allowEmptyOption: true });
+new TomSelect('#persediaanJenisDanaId', { maxOptions: 20,  allowEmptyOption: true });
+</script>
 <?= $this->endSection() ?>

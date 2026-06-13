@@ -5,6 +5,13 @@
 $errors    = session()->getFlashdata('errors') ?? [];
 $errorMsg  = session()->getFlashdata('error') ?? '';
 $old       = fn(string $k, $def = '') => old($k, $def);
+$periodeList = $periodeList ?? [];
+$periodeAktif = $periodeAktif ?? null;
+$jenisDana = $jenisDana ?? [];
+$programs   = $programs ?? [];
+$penerima   = $penerima ?? [];
+$akunPenyaluran = $akunPenyaluran ?? [];
+$rekening   = $rekening ?? [];
 ?>
 
 <?php if ($errorMsg): ?>
@@ -46,16 +53,16 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                                 Tanggal <span class="text-danger">*</span>
                             </label>
                             <input type="date" name="tanggal" id="inputTanggal"
-                                   class="form-control form-control-sm <?= isset($errors['tanggal']) ? 'is-invalid' : '' ?>"
-                                   value="<?= $old('tanggal', date('Y-m-d')) ?>" required>
+                                class="form-control form-control-sm <?= isset($errors['tanggal']) ? 'is-invalid' : '' ?>"
+                                value="<?= $old('tanggal', date('Y-m-d')) ?>" required>
                         </div>
                         <div class="col-sm-6">
                             <label class="form-label form-label-sm fw-semibold">
                                 Periode <span class="text-danger">*</span>
                             </label>
                             <select name="periode_id" id="inputPeriode"
-                                    class="form-select form-select-sm <?= isset($errors['periode_id']) ? 'is-invalid' : '' ?>"
-                                    required>
+                                class="form-select form-select-sm <?= isset($errors['periode_id']) ? 'is-invalid' : '' ?>"
+                                required>
                                 <option value="">— Pilih Periode —</option>
                                 <?php foreach ($periodeList as $p): ?>
                                     <option value="<?= $p['id'] ?>"
@@ -74,8 +81,8 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                             Jenis Dana <span class="text-danger">*</span>
                         </label>
                         <select name="jenis_dana_id" id="inputJenisDana"
-                                class="form-select form-select-sm <?= isset($errors['jenis_dana_id']) ? 'is-invalid' : '' ?>"
-                                required>
+                            class="form-select form-select-sm <?= isset($errors['jenis_dana_id']) ? 'is-invalid' : '' ?>"
+                            required>
                             <option value="">— Pilih Jenis Dana —</option>
                             <?php foreach ($jenisDana as $d): ?>
                                 <option value="<?= $d['id'] ?>"
@@ -135,16 +142,16 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                             Uraian <span class="text-danger">*</span>
                         </label>
                         <input type="text" name="uraian"
-                               class="form-control form-control-sm <?= isset($errors['uraian']) ? 'is-invalid' : '' ?>"
-                               placeholder="Keterangan singkat transaksi..."
-                               value="<?= esc($old('uraian')) ?>" required>
+                            class="form-control form-control-sm <?= isset($errors['uraian']) ? 'is-invalid' : '' ?>"
+                            placeholder="Keterangan singkat transaksi..."
+                            value="<?= esc($old('uraian')) ?>" required>
                     </div>
 
                     <!-- Keterangan -->
                     <div class="mb-0">
                         <label class="form-label form-label-sm fw-semibold">Keterangan</label>
                         <textarea name="keterangan" class="form-control form-control-sm"
-                                  rows="2" placeholder="Catatan tambahan (opsional)"><?= esc($old('keterangan')) ?></textarea>
+                            rows="2" placeholder="Catatan tambahan (opsional)"><?= esc($old('keterangan')) ?></textarea>
                     </div>
 
                 </div>
@@ -170,9 +177,9 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-semibold">Rp</span>
                             <input type="text" name="jumlah" id="inputJumlah"
-                                   class="form-control form-control-sm text-end fw-bold <?= isset($errors['jumlah']) ? 'is-invalid' : '' ?>"
-                                   placeholder="0" value="<?= esc($old('jumlah')) ?>"
-                                   data-rupiah required autocomplete="off">
+                                class="form-control form-control-sm text-end fw-bold <?= isset($errors['jumlah']) ? 'is-invalid' : '' ?>"
+                                placeholder="0" value="<?= esc($old('jumlah')) ?>"
+                                data-rupiah required autocomplete="off">
                         </div>
                     </div>
 
@@ -182,8 +189,8 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                             Akun Penyaluran (Debet) <span class="text-danger">*</span>
                         </label>
                         <select name="akun_debet_id" id="inputAkunDebet"
-                                class="form-select form-select-sm <?= isset($errors['akun_debet_id']) ? 'is-invalid' : '' ?>"
-                                required>
+                            class="form-select form-select-sm <?= isset($errors['akun_debet_id']) ? 'is-invalid' : '' ?>"
+                            required>
                             <option value="">— Pilih Akun —</option>
                             <?php foreach ($akunPenyaluran as $a): ?>
                                 <option value="<?= $a['id'] ?>"
@@ -203,8 +210,8 @@ $old       = fn(string $k, $def = '') => old($k, $def);
                             Rekening Bank Sumber (Kredit) <span class="text-danger">*</span>
                         </label>
                         <select name="rekening_id" id="inputRekening"
-                                class="form-select form-select-sm <?= isset($errors['rekening_id']) ? 'is-invalid' : '' ?>"
-                                required>
+                            class="form-select form-select-sm <?= isset($errors['rekening_id']) ? 'is-invalid' : '' ?>"
+                            required>
                             <option value="">— Pilih Rekening —</option>
                             <?php
                             $currentDana = null;
@@ -281,87 +288,94 @@ $old       = fn(string $k, $def = '') => old($k, $def);
 
 <?= $this->section('styles') ?>
 <style>
-.form-label-sm { font-size: .78rem; margin-bottom: .3rem; }
+    .form-label-sm {
+        font-size: .78rem;
+        margin-bottom: .3rem;
+    }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-const fmtRp = v => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
+    const fmtRp = v => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
 
-function updatePreview() {
-    const akunDebetSel = document.getElementById('inputAkunDebet');
-    const rekeningsel  = document.getElementById('inputRekening');
-    const jumlahInput  = document.getElementById('inputJumlah');
+    function updatePreview() {
+        const akunDebetSel = document.getElementById('inputAkunDebet');
+        const rekeningsel = document.getElementById('inputRekening');
+        const jumlahInput = document.getElementById('inputJumlah');
 
-    const akunDebet  = akunDebetSel.options[akunDebetSel.selectedIndex];
-    const rekening   = rekeningsel.options[rekeningsel.selectedIndex];
-    const jumlahRaw  = jumlahInput.value.replace(/\./g, '').replace(',', '.').trim();
-    const jumlah     = parseFloat(jumlahRaw) || 0;
+        const akunDebet = akunDebetSel.options[akunDebetSel.selectedIndex];
+        const rekening = rekeningsel.options[rekeningsel.selectedIndex];
+        const jumlahRaw = jumlahInput.value.replace(/\./g, '').replace(',', '.').trim();
+        const jumlah = parseFloat(jumlahRaw) || 0;
 
-    const hasDebet   = akunDebet && akunDebet.value;
-    const hasKredit  = rekening && rekening.value;
-    const hasJumlah  = jumlah > 0;
+        const hasDebet = akunDebet && akunDebet.value;
+        const hasKredit = rekening && rekening.value;
+        const hasJumlah = jumlah > 0;
 
-    const card = document.getElementById('cardPreview');
+        const card = document.getElementById('cardPreview');
 
-    if (hasDebet || hasKredit || hasJumlah) {
-        card.style.display = '';
-        document.getElementById('previewAkunDebet').textContent =
-            hasDebet ? (akunDebet.dataset.nomor + ' — ' + akunDebet.dataset.nama) : '—';
-        document.getElementById('previewDebet').textContent =
-            hasJumlah ? fmtRp(jumlah) : '—';
-        document.getElementById('previewAkunKredit').textContent =
-            hasKredit ? rekening.text.trim() : '—';
-        document.getElementById('previewKredit').textContent =
-            hasJumlah ? fmtRp(jumlah) : '—';
-    } else {
-        card.style.display = 'none';
-    }
-}
-
-// Auto-sinkron rekening saat pilih jenis dana
-document.getElementById('inputJenisDana').addEventListener('change', function () {
-    const jenisDanaId = this.value;
-    const sel = document.getElementById('inputRekening');
-
-    // Highlight rekening sesuai dana yang dipilih
-    Array.from(sel.options).forEach(opt => {
-        opt.style.fontWeight = (opt.dataset.jenis == jenisDanaId) ? 'bold' : '';
-    });
-});
-
-// Auto-isi uraian dari program
-document.getElementById('inputProgram').addEventListener('change', function () {
-    const opt = this.options[this.selectedIndex];
-    if (opt.value) {
-        const uraianInput = document.querySelector('input[name="uraian"]');
-        if (!uraianInput.value) {
-            uraianInput.value = 'Penyaluran ' + opt.dataset.nama;
+        if (hasDebet || hasKredit || hasJumlah) {
+            card.style.display = '';
+            document.getElementById('previewAkunDebet').textContent =
+                hasDebet ? (akunDebet.dataset.nomor + ' — ' + akunDebet.dataset.nama) : '—';
+            document.getElementById('previewDebet').textContent =
+                hasJumlah ? fmtRp(jumlah) : '—';
+            document.getElementById('previewAkunKredit').textContent =
+                hasKredit ? rekening.text.trim() : '—';
+            document.getElementById('previewKredit').textContent =
+                hasJumlah ? fmtRp(jumlah) : '—';
+        } else {
+            card.style.display = 'none';
         }
     }
-});
 
-// Update preview on change
-['inputAkunDebet', 'inputRekening'].forEach(id => {
-    document.getElementById(id).addEventListener('change', updatePreview);
-});
-document.getElementById('inputJumlah').addEventListener('input', updatePreview);
+    // Auto-sinkron rekening saat pilih jenis dana
+    document.getElementById('inputJenisDana').addEventListener('change', function() {
+        const jenisDanaId = this.value;
+        const sel = document.getElementById('inputRekening');
 
-// Format rupiah on jumlah input
-document.getElementById('inputJumlah').addEventListener('blur', function () {
-    const raw = this.value.replace(/\./g, '').replace(',', '.').trim();
-    const num = parseFloat(raw);
-    if (!isNaN(num) && num > 0) {
-        this.value = num.toLocaleString('id-ID');
-    }
-    updatePreview();
-});
+        // Highlight rekening sesuai dana yang dipilih
+        Array.from(sel.options).forEach(opt => {
+            opt.style.fontWeight = (opt.dataset.jenis == jenisDanaId) ? 'bold' : '';
+        });
+    });
 
-// Submit: strip format rupiah before submit
-document.getElementById('formPenyaluran').addEventListener('submit', function () {
-    const inp = document.getElementById('inputJumlah');
-    inp.value = inp.value.replace(/\./g, '').replace(',', '.').trim();
-});
+    // Auto-isi uraian dari program
+    document.getElementById('inputProgram').addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt.value) {
+            const uraianInput = document.querySelector('input[name="uraian"]');
+            if (!uraianInput.value) {
+                uraianInput.value = 'Penyaluran ' + opt.dataset.nama;
+            }
+        }
+    });
+
+    // Update preview on change
+    ['inputAkunDebet', 'inputRekening'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updatePreview);
+    });
+    document.getElementById('inputJumlah').addEventListener('input', updatePreview);
+
+    // Format rupiah on jumlah input
+    document.getElementById('inputJumlah').addEventListener('blur', function() {
+        const raw = this.value.replace(/\./g, '').replace(',', '.').trim();
+        const num = parseFloat(raw);
+        if (!isNaN(num) && num > 0) {
+            this.value = num.toLocaleString('id-ID');
+        }
+        updatePreview();
+    });
+
+    // Submit: strip format rupiah before submit
+    document.getElementById('formPenyaluran').addEventListener('submit', function() {
+        const inp = document.getElementById('inputJumlah');
+        inp.value = inp.value.replace(/\./g, '').replace(',', '.').trim();
+    });
+
+    // Tom Select
+    new TomSelect('#inputAkunDebet', { maxOptions: 500, allowEmptyOption: true });
+    new TomSelect('#inputRekening',  { maxOptions: 200, allowEmptyOption: true });
 </script>
 <?= $this->endSection() ?>

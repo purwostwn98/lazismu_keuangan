@@ -1,5 +1,21 @@
-<?= $this->extend('layouts/main') ?>
-<?= $this->section('content') ?>
+<?php
+
+/**
+ * @var \CodeIgniter\View\View $this
+ * @var string                 $pageTitle
+ * @var array                  $periodeList
+ * @var array|null             $periodeAktif
+ * @var array                  $kategoriList
+ * @var array                  $jenisZisGroups
+ * @var array                  $jenisZisLabels
+ * @var array                  $jenisDanaList
+ * @var array                  $rekeningList
+ * @var array                  $akunPenerimaan
+ * @var array                  $donaturList
+ */
+?>
+<?php $this->extend('layouts/main'); ?>
+<?php $this->section('content'); ?>
 
 <div class="container-fluid">
 
@@ -53,9 +69,9 @@
                                     Tanggal <span class="text-danger">*</span>
                                 </label>
                                 <input type="date" name="tanggal" id="tanggal"
-                                       class="form-control form-control-sm"
-                                       value="<?= old('tanggal', date('Y-m-d')) ?>"
-                                       required onchange="autoDetectPeriode()">
+                                    class="form-control form-control-sm"
+                                    value="<?= old('tanggal', date('Y-m-d')) ?>"
+                                    required onchange="autoDetectPeriode()">
                             </div>
 
                             <!-- Periode -->
@@ -67,8 +83,8 @@
                                     <option value="">— Pilih Periode —</option>
                                     <?php foreach ($periodeList as $p): ?>
                                         <option value="<?= $p['id'] ?>"
-                                                data-bulan="<?= $p['bulan'] ?>"
-                                                data-tahun="<?= $p['tahun'] ?>"
+                                            data-bulan="<?= $p['bulan'] ?>"
+                                            data-tahun="<?= $p['tahun'] ?>"
                                             <?= old('periode_id', ($periodeAktif['id'] ?? '')) == $p['id'] ? 'selected' : '' ?>>
                                             <?= esc($p['nama']) ?>
                                         </option>
@@ -81,7 +97,7 @@
                             <div class="col-12 col-md-4">
                                 <label class="form-label form-label-sm fw-semibold text-muted">No. Jurnal</label>
                                 <input type="text" class="form-control form-control-sm bg-light text-muted font-monospace"
-                                       value="PNR / auto-generate" readonly tabindex="-1">
+                                    value="PNR / auto-generate" readonly tabindex="-1">
                                 <div class="form-text">Dibuat otomatis saat disimpan.</div>
                             </div>
                         </div>
@@ -104,13 +120,13 @@
                                 </label>
                                 <div class="position-relative">
                                     <input type="text" id="donaturSearch"
-                                           class="form-control form-control-sm"
-                                           placeholder="Ketik nama atau kode donatur..."
-                                           autocomplete="off">
+                                        class="form-control form-control-sm"
+                                        placeholder="Ketik nama atau kode donatur..."
+                                        autocomplete="off">
                                     <input type="hidden" name="donatur_id" id="donaturId"
-                                           value="<?= old('donatur_id') ?>">
+                                        value="<?= old('donatur_id') ?>">
                                     <div id="donaturDropdown" class="dropdown-menu w-100 shadow-sm p-0"
-                                         style="max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
+                                        style="max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
                                 </div>
                                 <div class="form-text">Kosongkan jika donatur anonim / tidak tercatat.</div>
                             </div>
@@ -124,19 +140,19 @@
                                     <option value="">— Pilih Kategori —</option>
                                     <?php foreach ($kategoriList as $parent): ?>
                                         <?php if (! empty($parent['children'])): ?>
-                                        <optgroup label="<?= esc($parent['nama']) ?>">
-                                            <?php foreach ($parent['children'] as $child): ?>
-                                                <option value="<?= $child['id'] ?>"
-                                                    <?= old('kategori_id') == $child['id'] ? 'selected' : '' ?>>
-                                                    <?= esc($child['nama']) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </optgroup>
+                                            <optgroup label="<?= esc($parent['nama']) ?>">
+                                                <?php foreach ($parent['children'] as $child): ?>
+                                                    <option value="<?= $child['id'] ?>"
+                                                        <?= old('kategori_id') == $child['id'] ? 'selected' : '' ?>>
+                                                        <?= esc($child['nama']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </optgroup>
                                         <?php else: ?>
-                                        <option value="<?= $parent['id'] ?>"
-                                            <?= old('kategori_id') == $parent['id'] ? 'selected' : '' ?>>
-                                            <?= esc($parent['nama']) ?>
-                                        </option>
+                                            <option value="<?= $parent['id'] ?>"
+                                                <?= old('kategori_id') == $parent['id'] ? 'selected' : '' ?>>
+                                                <?= esc($parent['nama']) ?>
+                                            </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </select>
@@ -160,17 +176,17 @@
                                     Jenis ZIS <span class="text-danger">*</span>
                                 </label>
                                 <select name="jenis_zis" id="jenisZis" class="form-select form-select-sm"
-                                        required onchange="onJenisZisChange()">
+                                    required onchange="onJenisZisChange()">
                                     <option value="">— Pilih Jenis ZIS —</option>
                                     <?php foreach ($jenisZisGroups as $groupName => $items): ?>
-                                    <optgroup label="<?= esc($groupName) ?>">
-                                        <?php foreach ($items as $key): ?>
-                                        <option value="<?= $key ?>"
-                                            <?= old('jenis_zis') === $key ? 'selected' : '' ?>>
-                                            <?= esc($jenisZisLabels[$key]) ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
+                                        <optgroup label="<?= esc($groupName) ?>">
+                                            <?php foreach ($items as $key): ?>
+                                                <option value="<?= $key ?>"
+                                                    <?= old('jenis_zis') === $key ? 'selected' : '' ?>>
+                                                    <?= esc($jenisZisLabels[$key]) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -198,10 +214,10 @@
                                     Jumlah (Rp) <span class="text-danger">*</span>
                                 </label>
                                 <input type="number" name="jumlah" id="jumlah"
-                                       class="form-control form-control-sm"
-                                       value="<?= old('jumlah') ?>"
-                                       min="1" step="any" required
-                                       placeholder="0">
+                                    class="form-control form-control-sm"
+                                    value="<?= old('jumlah') ?>"
+                                    min="1" step="any" required
+                                    placeholder="0">
                             </div>
                         </div>
                     </div>
@@ -238,7 +254,7 @@
                                 <label class="form-label form-label-sm fw-semibold">
                                     Akun Penerimaan (Kredit) <span class="text-danger">*</span>
                                 </label>
-                                <select name="akun_penerimaan_id" id="akunPenerimaanId" class="form-select form-select-sm" required>
+                                <select name="akun_penerimaan_id" id="akunPenerimaanId" class="form-select form-select-sm ts-akun" required>
                                     <option value="">— Pilih Akun —</option>
                                     <?php foreach ($akunPenerimaan as $a): ?>
                                         <option value="<?= $a['id'] ?>"
@@ -286,15 +302,15 @@
                                     Uraian <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" name="uraian" id="uraian"
-                                       class="form-control form-control-sm"
-                                       value="<?= old('uraian') ?>"
-                                       maxlength="255" required
-                                       placeholder="cth: Penerimaan Zakat Maal Profesi - Ahmad">
+                                    class="form-control form-control-sm"
+                                    value="<?= old('uraian') ?>"
+                                    maxlength="255" required
+                                    placeholder="cth: Penerimaan Zakat Maal Profesi - Ahmad">
                             </div>
                             <div class="col-12">
                                 <label class="form-label form-label-sm fw-semibold">Keterangan <span class="text-muted fw-normal">(opsional)</span></label>
                                 <textarea name="keterangan" class="form-control form-control-sm" rows="2"
-                                          maxlength="500" placeholder="Catatan tambahan..."><?= old('keterangan') ?></textarea>
+                                    maxlength="500" placeholder="Catatan tambahan..."><?= old('keterangan') ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -314,149 +330,167 @@
 
 </div>
 
-<?= $this->endSection() ?>
+<?php $this->endSection(); ?>
 
-<?= $this->section('scripts') ?>
+<?php $this->section('scripts') ?>
 <script>
-// ── Donatur data for autocomplete ──────────────────────────
-const donaturData = <?= json_encode(array_map(fn($d) => [
-    'id'    => $d['id'],
-    'label' => $d['nama'] . ($d['kode'] ? ' [' . $d['kode'] . ']' : ''),
-    'nama'  => $d['nama'],
-], $donaturList)) ?>;
+    // ── Donatur data for autocomplete ──────────────────────────
+    const donaturData = <?= json_encode(array_map(fn($d) => [
+                            'id'    => $d['id'],
+                            'label' => $d['nama'] . ($d['kode'] ? ' [' . $d['kode'] . ']' : ''),
+                            'nama'  => $d['nama'],
+                        ], $donaturList)) ?>;
 
-const rekData = <?= json_encode(array_map(fn($r) => [
-    'id'   => $r['id'],
-    'nama' => $r['nama'] . ' (' . $r['bank'] . ')',
-], $rekeningList)) ?>;
+    const rekData = <?= json_encode(array_map(fn($r) => [
+                        'id'   => $r['id'],
+                        'nama' => $r['nama'] . ' (' . $r['bank'] . ')',
+                    ], $rekeningList)) ?>;
 
-const akunData = <?= json_encode(array_map(fn($a) => [
-    'id'   => $a['id'],
-    'nama' => $a['nomor_akun'] . ' — ' . $a['nama_akun'],
-], $akunPenerimaan)) ?>;
+    const akunData = <?= json_encode(array_map(fn($a) => [
+                            'id'   => $a['id'],
+                            'nama' => $a['nomor_akun'] . ' — ' . $a['nama_akun'],
+                        ], $akunPenerimaan)) ?>;
 
-// ── Donatur autocomplete ────────────────────────────────────
-const donaturSearchEl = document.getElementById('donaturSearch');
-const donaturIdEl     = document.getElementById('donaturId');
-const donaturDropEl   = document.getElementById('donaturDropdown');
-const kategoriIdEl    = document.getElementById('kategoriId');
+    // ── Donatur autocomplete ────────────────────────────────────
+    const donaturSearchEl = document.getElementById('donaturSearch');
+    const donaturIdEl = document.getElementById('donaturId');
+    const donaturDropEl = document.getElementById('donaturDropdown');
+    const kategoriIdEl = document.getElementById('kategoriId');
 
-// Pre-fill if old() has a value
-<?php if (old('donatur_id')): ?>
-(function () {
-    const d = donaturData.find(x => x.id == <?= (int) old('donatur_id') ?>);
-    if (d) { donaturSearchEl.value = d.label; donaturIdEl.value = d.id; }
-})();
-<?php endif; ?>
+    // Pre-fill if old() has a value
+    <?php if (old('donatur_id')): ?>
+            (function() {
+                const d = donaturData.find(x => x.id == <?= (int) old('donatur_id') ?>);
+                if (d) {
+                    donaturSearchEl.value = d.label;
+                    donaturIdEl.value = d.id;
+                }
+            })();
+    <?php endif; ?>
 
-donaturSearchEl.addEventListener('input', function () {
-    const q = this.value.toLowerCase().trim();
-    donaturIdEl.value = '';
-    if (q.length < 1) { donaturDropEl.classList.remove('show'); return; }
+    donaturSearchEl.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        donaturIdEl.value = '';
+        if (q.length < 1) {
+            donaturDropEl.classList.remove('show');
+            return;
+        }
 
-    const matches = donaturData.filter(d => d.label.toLowerCase().includes(q)).slice(0, 10);
-    if (matches.length === 0) { donaturDropEl.classList.remove('show'); return; }
+        const matches = donaturData.filter(d => d.label.toLowerCase().includes(q)).slice(0, 10);
+        if (matches.length === 0) {
+            donaturDropEl.classList.remove('show');
+            return;
+        }
 
-    donaturDropEl.innerHTML = matches.map(d =>
-        `<button type="button" class="dropdown-item py-1 px-3" data-id="${d.id}" data-label="${d.label}">
+        donaturDropEl.innerHTML = matches.map(d =>
+            `<button type="button" class="dropdown-item py-1 px-3" data-id="${d.id}" data-label="${d.label}">
             ${d.label}
         </button>`
-    ).join('');
-    donaturDropEl.classList.add('show');
-});
+        ).join('');
+        donaturDropEl.classList.add('show');
+    });
 
-donaturDropEl.addEventListener('click', function (e) {
-    const btn = e.target.closest('[data-id]');
-    if (!btn) return;
-    donaturSearchEl.value = btn.dataset.label;
-    donaturIdEl.value     = btn.dataset.id;
-    donaturDropEl.classList.remove('show');
-    updateUraian();
-});
-
-document.addEventListener('click', e => {
-    if (!donaturSearchEl.contains(e.target) && !donaturDropEl.contains(e.target)) {
+    donaturDropEl.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-id]');
+        if (!btn) return;
+        donaturSearchEl.value = btn.dataset.label;
+        donaturIdEl.value = btn.dataset.id;
         donaturDropEl.classList.remove('show');
-        // Clear if not matched
-        if (donaturIdEl.value === '' && donaturSearchEl.value !== '') {
-            donaturSearchEl.value = '';
+        updateUraian();
+    });
+
+    document.addEventListener('click', e => {
+        if (!donaturSearchEl.contains(e.target) && !donaturDropEl.contains(e.target)) {
+            donaturDropEl.classList.remove('show');
+            // Clear if not matched
+            if (donaturIdEl.value === '' && donaturSearchEl.value !== '') {
+                donaturSearchEl.value = '';
+            }
+        }
+    });
+
+    // ── Auto-detect periode from tanggal ───────────────────────
+    const periodeOptions = <?= json_encode(array_map(fn($p) => [
+                                'id'    => $p['id'],
+                                'bulan' => (int) $p['bulan'],
+                                'tahun' => (int) $p['tahun'],
+                            ], $periodeList)) ?>;
+
+    function autoDetectPeriode() {
+        const val = document.getElementById('tanggal').value;
+        if (!val) return;
+        const d = new Date(val);
+        const m = d.getMonth() + 1;
+        const y = d.getFullYear();
+        const found = periodeOptions.find(p => p.bulan === m && p.tahun === y);
+        if (found) {
+            document.getElementById('periodeId').value = found.id;
         }
     }
-});
 
-// ── Auto-detect periode from tanggal ───────────────────────
-const periodeOptions = <?= json_encode(array_map(fn($p) => [
-    'id'    => $p['id'],
-    'bulan' => (int) $p['bulan'],
-    'tahun' => (int) $p['tahun'],
-], $periodeList)) ?>;
+    // ── Auto-fill uraian ────────────────────────────────────────
+    const jenisZisLabels = <?= json_encode($jenisZisLabels) ?>;
 
-function autoDetectPeriode() {
-    const val = document.getElementById('tanggal').value;
-    if (!val) return;
-    const d = new Date(val);
-    const m = d.getMonth() + 1;
-    const y = d.getFullYear();
-    const found = periodeOptions.find(p => p.bulan === m && p.tahun === y);
-    if (found) {
-        document.getElementById('periodeId').value = found.id;
+    function updateUraian() {
+        const jz = document.getElementById('jenisZis').value;
+        const label = jenisZisLabels[jz] ?? '';
+        const donNama = donaturIdEl.value ?
+            (donaturData.find(d => d.id == donaturIdEl.value)?.nama ?? '') :
+            '';
+
+        const uraianEl = document.getElementById('uraian');
+        if (uraianEl.dataset.manual) return; // user already typed manually
+
+        let text = label ? 'Penerimaan ' + label : '';
+        if (donNama) text += ' - ' + donNama;
+        if (text) uraianEl.value = text;
     }
-}
 
-// ── Auto-fill uraian ────────────────────────────────────────
-const jenisZisLabels = <?= json_encode($jenisZisLabels) ?>;
+    document.getElementById('uraian').addEventListener('input', function() {
+        this.dataset.manual = '1';
+    });
 
-function updateUraian() {
-    const jz    = document.getElementById('jenisZis').value;
-    const label = jenisZisLabels[jz] ?? '';
-    const donNama = donaturIdEl.value
-        ? (donaturData.find(d => d.id == donaturIdEl.value)?.nama ?? '')
-        : '';
-
-    const uraianEl = document.getElementById('uraian');
-    if (uraianEl.dataset.manual) return; // user already typed manually
-
-    let text = label ? 'Penerimaan ' + label : '';
-    if (donNama) text += ' - ' + donNama;
-    if (text) uraianEl.value = text;
-}
-
-document.getElementById('uraian').addEventListener('input', function () {
-    this.dataset.manual = '1';
-});
-
-// ── Jenis ZIS change ────────────────────────────────────────
-function onJenisZisChange() { updateUraian(); updateJurnalPreview(); }
-
-// ── Jurnal preview ──────────────────────────────────────────
-function updateJurnalPreview() {
-    const rId = document.getElementById('rekeningId').value;
-    const aId = document.getElementById('akunPenerimaanId').value;
-    const jml = parseFloat(document.getElementById('jumlah').value) || 0;
-
-    const rNama = rId ? (rekData.find(r => r.id == rId)?.nama ?? '—') : '—';
-    const aNama = aId ? (akunData.find(a => a.id == aId)?.nama ?? '—') : '—';
-
-    const prev = document.getElementById('jurnalPreview');
-
-    if (rId && aId && jml > 0) {
-        const fmt = 'Rp ' + jml.toLocaleString('id-ID');
-        document.getElementById('previewDebet').textContent         = rNama;
-        document.getElementById('previewKredit').textContent        = aNama;
-        document.getElementById('previewJumlahDebet').textContent   = fmt;
-        document.getElementById('previewJumlahKredit').textContent  = fmt;
-        prev.style.display = 'block';
-    } else {
-        prev.style.display = 'none';
+    // ── Jenis ZIS change ────────────────────────────────────────
+    function onJenisZisChange() {
+        updateUraian();
+        updateJurnalPreview();
     }
-}
 
-document.getElementById('rekeningId').addEventListener('change', updateJurnalPreview);
-document.getElementById('akunPenerimaanId').addEventListener('change', updateJurnalPreview);
-document.getElementById('jumlah').addEventListener('input', updateJurnalPreview);
+    // ── Jurnal preview ──────────────────────────────────────────
+    function updateJurnalPreview() {
+        const rId = document.getElementById('rekeningId').value;
+        const aId = document.getElementById('akunPenerimaanId').value;
+        const jml = parseFloat(document.getElementById('jumlah').value) || 0;
 
-// Initial state
-autoDetectPeriode();
-updateJurnalPreview();
+        const rNama = rId ? (rekData.find(r => r.id == rId)?.nama ?? '—') : '—';
+        const aNama = aId ? (akunData.find(a => a.id == aId)?.nama ?? '—') : '—';
+
+        const prev = document.getElementById('jurnalPreview');
+
+        if (rId && aId && jml > 0) {
+            const fmt = 'Rp ' + jml.toLocaleString('id-ID');
+            document.getElementById('previewDebet').textContent = rNama;
+            document.getElementById('previewKredit').textContent = aNama;
+            document.getElementById('previewJumlahDebet').textContent = fmt;
+            document.getElementById('previewJumlahKredit').textContent = fmt;
+            prev.style.display = 'block';
+        } else {
+            prev.style.display = 'none';
+        }
+    }
+
+    document.getElementById('rekeningId').addEventListener('change', updateJurnalPreview);
+    document.getElementById('akunPenerimaanId').addEventListener('change', updateJurnalPreview);
+    document.getElementById('jumlah').addEventListener('input', updateJurnalPreview);
+
+    // Tom Select
+    new TomSelect('#akunPenerimaanId', {
+        maxOptions: 500,
+        allowEmptyOption: true
+    });
+
+    // Initial state
+    autoDetectPeriode();
+    updateJurnalPreview();
 </script>
-<?= $this->endSection() ?>
+<?php $this->endSection(); ?>

@@ -194,7 +194,7 @@ $error   = session('error')   ?? '';
                             $jenisDana = $jenisDana ?? [];
                             ?>
                             <label class="form-label fw-semibold">Jenis Dana <span class="text-danger">*</span></label>
-                            <select name="jenis_dana_id" class="form-select" required>
+                            <select name="jenis_dana_id" id="tambah_jenis_dana_id" class="form-select" required>
                                 <option value="">-- Pilih Jenis Dana --</option>
                                 <?php foreach ($jenisDana as $jd): ?>
                                     <option value="<?= $jd['id'] ?>" <?= old('jenis_dana_id') == $jd['id'] ? 'selected' : '' ?>>
@@ -208,7 +208,7 @@ $error   = session('error')   ?? '';
                             $akunKas = $akunKas ?? [];
                             ?>
                             <label class="form-label fw-semibold">Akun Kas <span class="text-danger">*</span></label>
-                            <select name="akun_id" class="form-select" required>
+                            <select name="akun_id" id="tambah_akun_id" class="form-select" required>
                                 <option value="">-- Pilih Akun --</option>
                                 <?php foreach ($akunKas as $ak): ?>
                                     <option value="<?= $ak['id'] ?>" <?= old('akun_id') == $ak['id'] ? 'selected' : '' ?>>
@@ -306,6 +306,11 @@ $error   = session('error')   ?? '';
 </div>
 
 <script>
+    const tsTambahJenisDana = new TomSelect('#tambah_jenis_dana_id', { maxOptions: 20,  allowEmptyOption: true });
+    const tsTambahAkun      = new TomSelect('#tambah_akun_id',       { maxOptions: 500, allowEmptyOption: true });
+    const tsEditJenisDana   = new TomSelect('#edit_jenis_dana_id',   { maxOptions: 20,  allowEmptyOption: true });
+    const tsEditAkun        = new TomSelect('#edit_akun_id',         { maxOptions: 500, allowEmptyOption: true });
+
     function openEdit(data) {
         const form = document.getElementById('formEdit');
         form.action = '<?= base_url('master/rekening/update/') ?>' + data.id;
@@ -313,8 +318,8 @@ $error   = session('error')   ?? '';
         document.getElementById('edit_nama').value = data.nama;
         document.getElementById('edit_nomor_rekening').value = data.nomor_rekening ?? '';
         document.getElementById('edit_bank').value = data.bank;
-        document.getElementById('edit_jenis_dana_id').value = data.jenis_dana_id;
-        document.getElementById('edit_akun_id').value = data.akun_id;
+        tsEditJenisDana.setValue(String(data.jenis_dana_id), true);
+        tsEditAkun.setValue(String(data.akun_id), true);
         document.getElementById('edit_is_aktif').checked = data.is_aktif == 1;
 
         // Format saldo awal ke Rupiah

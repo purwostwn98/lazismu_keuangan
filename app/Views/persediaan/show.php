@@ -315,9 +315,10 @@ const selAkun  = document.getElementById('akunLawan');
 const wrapAkun = document.getElementById('wrapAkunLawan');
 const wrapRek  = document.getElementById('wrapRekening');
 
+const tsAkun = new TomSelect('#akunLawan', { maxOptions: 500, allowEmptyOption: true });
+
 subJenis.addEventListener('change', function () {
     const val = this.value;
-    selAkun.innerHTML = '<option value="">— Pilih Akun —</option>';
 
     if (val === 'pembelian') {
         wrapAkun.classList.add('d-none');
@@ -329,12 +330,13 @@ subJenis.addEventListener('change', function () {
         selAkun.setAttribute('required', 'required');
 
         const list = (val === 'penerimaan_natura') ? akunMasuk : akunKeluar;
-        list.forEach(function (a) {
-            const opt = document.createElement('option');
-            opt.value = a.id;
-            opt.text  = a.nomor_akun + ' — ' + a.nama_akun + ' (' + a.tipe + ')';
-            selAkun.appendChild(opt);
-        });
+        tsAkun.clear(true);
+        tsAkun.clearOptions();
+        tsAkun.addOptions(
+            [{ value: '', text: '— Pilih Akun —' }].concat(
+                list.map(a => ({ value: a.id, text: a.nomor_akun + ' — ' + a.nama_akun + ' (' + a.tipe + ')' }))
+            )
+        );
     }
     hitungTotal();
 });
