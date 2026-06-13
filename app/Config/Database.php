@@ -26,7 +26,7 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'host.docker.internal',
+        'hostname'     => '141.11.160.162',
         'username'     => 'lazismu',
         'password'     => 'lazismu2024',
         'database'     => 'lazismu_keuangan',
@@ -156,38 +156,6 @@ class Database extends Config
     //            'time'     => 'H:i:s',
     //        ],
     //    ];
-
-    /**
-     * Koneksi ke database eksternal Lazismu (program penyaluran).
-     *
-     * @var array<string, mixed>
-     */
-    public array $lazismu_ext = [
-        'DSN'          => '',
-        'hostname'     => '172.16.10.32',
-        'username'     => 'lazismu',
-        'password'     => 'jfnj_2n3@ndni',
-        'database'     => 'lazismu',
-        'DBDriver'     => 'MySQLi',
-        'DBPrefix'     => '',
-        'pConnect'     => false,
-        'DBDebug'      => true,
-        'charset'      => 'utf8mb4',
-        'DBCollat'     => 'utf8mb4_general_ci',
-        'swapPre'      => '',
-        'encrypt'      => false,
-        'compress'     => false,
-        'strictOn'     => false,
-        'failover'     => [],
-        'port'         => 3306,
-        'numberNative' => false,
-        'foundRows'    => false,
-        'dateFormat'   => [
-            'date'     => 'Y-m-d',
-            'datetime' => 'Y-m-d H:i:s',
-            'time'     => 'H:i:s',
-        ],
-    ];
 
     /**
      * This database connection is used when running PHPUnit database tests.

@@ -21,7 +21,7 @@ class Program extends BaseController
         $search    = $this->request->getGet('q');
         $kategori  = $this->request->getGet('kategori');
 
-        $db = \Config\Database::connect('lazismu_ext');
+        $db = \Config\Database::connect();
 
         $builder = $db->table('ad_program p')
             ->select('p.id_program, p.nama_program, p.deskripsi_program, p.jenis_formulir, p.status_program, k.id_kategori_program, k.nama_kategori')

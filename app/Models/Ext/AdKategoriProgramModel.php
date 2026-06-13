@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class AdKategoriProgramModel extends Model
 {
-    protected $DBGroup    = 'lazismu_ext';
+    protected $DBGroup    = 'default';
     protected $table      = 'ad_kategori_program';
     protected $primaryKey = 'id_kategori_program';
 
