@@ -288,6 +288,11 @@ function isOpen(string $seg, array $matches): string
                             Periode
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('master/saldo-awal') ?>" class="nav-link<?= isActive($currentPath, 'master/saldo-awal') ?>">
+                            Saldo Dana Awal
+                        </a>
+                    </li>
                 </ul>
             </div>
         </li>

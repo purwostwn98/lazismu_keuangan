@@ -86,6 +86,18 @@ class LaporanModel
             $saldoAwal[$r['kode']] = (float)$r['saldo_akhir'];
         }
 
+        // Saldo awal manual (dari tabel saldo_dana_awal) — hanya untuk kode yang belum ada dari saldo_dana
+        $manualRows = $this->db->table('saldo_dana_awal sa')
+            ->select('sa.saldo, jd.kode')
+            ->join('jenis_dana jd', 'jd.id = sa.jenis_dana_id')
+            ->where('sa.tahun', $tahun)
+            ->get()->getResultArray();
+        foreach ($manualRows as $r) {
+            if (!isset($saldoAwal[$r['kode']])) {
+                $saldoAwal[$r['kode']] = (float)$r['saldo'];
+            }
+        }
+
         // Saldo_dana resmi untuk periode yang sudah ditutup di tahun ini
         $sdRows = $this->db->table('saldo_dana sd')
             ->select('sd.saldo_akhir, jd.kode, p.bulan')
@@ -260,6 +272,64 @@ class LaporanModel
      */
     public function getPerubahanDana(int $tahun): array
     {
+        $allKodes = ['ZAKAT','INFAK_T','INFAK_TT','AMIL','CSR','WAKAF'];
+
+        // ── 1. Saldo awal tahun dari saldo_dana Desember tahun lalu ──────
+        $prevSdRows = $this->db->query("
+            SELECT jd.kode, sd.saldo_akhir
+            FROM saldo_dana sd
+            JOIN jenis_dana jd ON jd.id = sd.jenis_dana_id
+            JOIN periode p     ON p.id  = sd.periode_id
+            WHERE p.tahun = ? AND p.bulan = 12
+        ", [$tahun - 1])->getResultArray();
+
+        $saldoAwalTahun = [];
+        foreach ($prevSdRows as $r) {
+            $saldoAwalTahun[$r['kode']] = (float)$r['saldo_akhir'];
+        }
+
+        // ── 1b. Saldo awal manual dari tabel saldo_dana_awal ─────────────
+        // (hanya dipakai untuk kode yang belum ada dari saldo_dana)
+        $manualSdRows = $this->db->table('saldo_dana_awal sa')
+            ->select('sa.saldo, jd.kode')
+            ->join('jenis_dana jd', 'jd.id = sa.jenis_dana_id')
+            ->where('sa.tahun', $tahun)
+            ->get()->getResultArray();
+        foreach ($manualSdRows as $r) {
+            if (!isset($saldoAwalTahun[$r['kode']])) {
+                $saldoAwalTahun[$r['kode']] = (float)$r['saldo'];
+            }
+        }
+
+        // ── 2. Fallback: hitung dari semua jurnal sebelum tahun ini ──────
+        // (untuk dana yang tidak punya record saldo_dana Desember lalu maupun saldo_dana_awal)
+        $kodesMissing = array_values(array_diff($allKodes, array_keys($saldoAwalTahun)));
+        if (!empty($kodesMissing)) {
+            $ph = implode(',', array_fill(0, count($kodesMissing), '?'));
+            $prevRows = $this->db->query("
+                SELECT jd.kode, j.jenis_transaksi, SUM(j.total_debet) AS total
+                FROM jurnal j
+                JOIN jenis_dana jd ON jd.id = j.jenis_dana_id
+                JOIN periode p     ON p.id  = j.periode_id
+                WHERE p.tahun < ?
+                  AND jd.kode IN ($ph)
+                  AND j.jenis_transaksi IN ('penerimaan','penyaluran','biaya')
+                GROUP BY jd.kode, j.jenis_transaksi
+            ", array_merge([$tahun], $kodesMissing))->getResultArray();
+
+            $prevMap = [];
+            foreach ($prevRows as $r) {
+                $prevMap[$r['kode']][$r['jenis_transaksi']] = (float)$r['total'];
+            }
+            foreach ($kodesMissing as $kode) {
+                $pen = $prevMap[$kode]['penerimaan'] ?? 0.0;
+                $psl = $prevMap[$kode]['penyaluran'] ?? 0.0;
+                $bya = $prevMap[$kode]['biaya']      ?? 0.0;
+                $saldoAwalTahun[$kode] = $pen - $psl - $bya;
+            }
+        }
+
+        // ── 3. Transaksi tahun ini per kode per bulan ────────────────────
         $rows = $this->db->query("
             SELECT jd.kode, p.bulan, j.jenis_transaksi, SUM(j.total_debet) AS total
             FROM jurnal j
@@ -275,9 +345,10 @@ class LaporanModel
             $movMap[$r['kode']][(int)$r['bulan']][$r['jenis_transaksi']] = (float)$r['total'];
         }
 
+        // ── 4. Hitung saldo_awal / delta / saldo_akhir per bulan ─────────
         $result = [];
-        foreach (['ZAKAT','INFAK_T','INFAK_TT','AMIL','CSR','WAKAF'] as $kode) {
-            $saldo = 0.0;
+        foreach ($allKodes as $kode) {
+            $saldo = $saldoAwalTahun[$kode] ?? 0.0;
             for ($b = 1; $b <= 12; $b++) {
                 $pen   = (float)($movMap[$kode][$b]['penerimaan'] ?? 0);
                 $psl   = (float)($movMap[$kode][$b]['penyaluran'] ?? 0);

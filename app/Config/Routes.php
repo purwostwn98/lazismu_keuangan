@@ -67,6 +67,9 @@ $routes->post('master/rekening/store',      'Master\RekeningBank::store');
 $routes->post('master/rekening/update/(:num)', 'Master\RekeningBank::update/$1');
 $routes->get('master/rekening/toggle/(:num)', 'Master\RekeningBank::toggleAktif/$1');
 
+$routes->get('master/saldo-awal',           'Master\SaldoAwal::index');
+$routes->post('master/saldo-awal/store',    'Master\SaldoAwal::store');
+
 // Piutang
 $routes->get('piutang',                  'Piutang::index');
 $routes->get('piutang/input',            'Piutang::input');
