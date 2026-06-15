@@ -85,6 +85,16 @@ $routes->post('persediaan/mutasi-store/(:num)',   'Persediaan::mutasiStore/$1');
 $routes->get('persediaan/mutasi-delete/(:num)',   'Persediaan::mutasiDelete/$1');
 $routes->get('persediaan/delete/(:num)',          'Persediaan::delete/$1');
 
+// Biaya Operasional
+$routes->get('biaya',                    'BiayaOperasional::index');
+$routes->get('biaya/input',              'BiayaOperasional::input');
+$routes->post('biaya/store',             'BiayaOperasional::store');
+$routes->get('biaya/cetak/(:num)',          'BiayaOperasional::cetak/$1');
+$routes->get('biaya/delete/(:num)',         'BiayaOperasional::delete/$1');
+$routes->post('biaya/upload-bukti/(:num)', 'BiayaOperasional::uploadBukti/$1');
+$routes->get('biaya/delete-bukti/(:num)',  'BiayaOperasional::deleteBukti/$1');
+$routes->get('biaya/(:num)',               'BiayaOperasional::show/$1');
+
 // Jurnal
 $routes->get('jurnal',               'Jurnal::index');
 $routes->get('jurnal/input',         'Jurnal::input');

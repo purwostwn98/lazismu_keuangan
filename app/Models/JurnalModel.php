@@ -122,4 +122,27 @@ class JurnalModel extends Model
 
         return ['header' => $header, 'details' => $details];
     }
+
+    public function getBiayaWithDetail(int $id): array
+    {
+        $header = $this->db->table('jurnal j')
+            ->select('j.*, jd.nama AS nama_dana, jd.kode AS kode_dana, p.nama AS nama_periode, p.is_tutup')
+            ->join('jenis_dana jd', 'jd.id = j.jenis_dana_id', 'left')
+            ->join('periode p',     'p.id  = j.periode_id',    'left')
+            ->where('j.id', $id)
+            ->where('j.jenis_transaksi', 'biaya')
+            ->get()->getRowArray();
+
+        if (!$header) return [];
+
+        $details = $this->db->table('jurnal_detail d')
+            ->select('d.*, a.nomor_akun, a.nama_akun, a.tipe, rb.nama AS nama_rekening, rb.bank AS nama_bank')
+            ->join('akun a',          'a.id  = d.akun_id',          'left')
+            ->join('rekening_bank rb', 'rb.id = d.rekening_bank_id', 'left')
+            ->where('d.jurnal_id', $id)
+            ->orderBy('d.debet DESC, d.id ASC')
+            ->get()->getResultArray();
+
+        return ['header' => $header, 'details' => $details];
+    }
 }

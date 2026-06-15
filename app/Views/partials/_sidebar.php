@@ -97,6 +97,30 @@ function isOpen(string $seg, array $matches): string
             </div>
         </li>
 
+        <!-- OPERASIONAL -->
+        <li class="sidebar-section-label">Operasional</li>
+
+        <li class="nav-item">
+            <a href="#menu-biaya" data-bs-toggle="collapse" class="nav-link<?= isActive($segment, 'biaya') ?>"
+                aria-expanded="<?= in_array($segment, ['biaya']) ? 'true' : 'false' ?>">
+                <i class="fas fa-file-invoice-dollar"></i> Biaya Operasional
+            </a>
+            <div class="collapse<?= isOpen($segment, ['biaya']) ?>" id="menu-biaya">
+                <ul class="sidebar-submenu nav flex-column">
+                    <li class="nav-item">
+                        <a href="<?= base_url('biaya/input') ?>" class="nav-link<?= isActive($currentPath, 'biaya/input') ?>">
+                            Input Biaya
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('biaya') ?>" class="nav-link<?= isActive($currentPath, 'biaya') ?>">
+                            Daftar Biaya
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
         <!-- AKUNTANSI -->
         <li class="sidebar-section-label">Akuntansi</li>
 
