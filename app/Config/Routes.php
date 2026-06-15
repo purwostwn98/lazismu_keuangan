@@ -92,11 +92,13 @@ $routes->get('persediaan/delete/(:num)',          'Persediaan::delete/$1');
 $routes->get('biaya',                    'BiayaOperasional::index');
 $routes->get('biaya/input',              'BiayaOperasional::input');
 $routes->post('biaya/store',             'BiayaOperasional::store');
-$routes->get('biaya/cetak/(:num)',          'BiayaOperasional::cetak/$1');
-$routes->get('biaya/delete/(:num)',         'BiayaOperasional::delete/$1');
-$routes->post('biaya/upload-bukti/(:num)', 'BiayaOperasional::uploadBukti/$1');
-$routes->get('biaya/delete-bukti/(:num)',  'BiayaOperasional::deleteBukti/$1');
-$routes->get('biaya/(:num)',               'BiayaOperasional::show/$1');
+$routes->get('biaya/cetak/(:num)',           'BiayaOperasional::cetak/$1');
+$routes->get('biaya/edit/(:num)',            'BiayaOperasional::edit/$1');
+$routes->post('biaya/update/(:num)',         'BiayaOperasional::update/$1');
+$routes->get('biaya/delete/(:num)',          'BiayaOperasional::delete/$1');
+$routes->post('biaya/upload-bukti/(:num)',  'BiayaOperasional::uploadBukti/$1');
+$routes->get('biaya/delete-bukti/(:num)',   'BiayaOperasional::deleteBukti/$1');
+$routes->get('biaya/(:num)',                'BiayaOperasional::show/$1');
 
 // Jurnal
 $routes->get('jurnal',               'Jurnal::index');

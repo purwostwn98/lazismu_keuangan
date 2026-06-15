@@ -170,6 +170,39 @@
         .rekening-box .rek-bank { font-size: 9pt; color: #666; }
         .rekening-box .kredit-amount { font-size: 14pt; font-weight: bold; color: #c0392b; }
 
+        /* ── Tabel penerima ──────────────────────────────── */
+        .penerima-box {
+            border: 1px solid #f0c040;
+            border-radius: 5px;
+            background: #fffdf0;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 9.5pt;
+        }
+        .penerima-box .pn-title {
+            font-size: 8.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #8a6a00;
+            letter-spacing: .4px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f0c040;
+            padding-bottom: 4px;
+        }
+        .penerima-box table { margin-bottom: 0; font-size: 9.5pt; }
+        .penerima-box thead th { background: #f5e080; color: #5a4000; padding: 5px 8px; }
+        .penerima-box tfoot td { border-top: 1.5px solid #c8a000; font-weight: bold; }
+        .ttd-penerima {
+            height: 56px;
+            vertical-align: top;
+            padding: 5px 8px !important;
+        }
+        .ttd-penerima-num {
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #333;
+        }
+
         /* ── Tanda tangan ─────────────────────────────────── */
         .ttd-area {
             display: grid;
@@ -228,6 +261,7 @@
 $header     = $header     ?? [];
 $details    = $details    ?? [];
 $kegiatan   = $kegiatan   ?? [];
+$penerima   = $penerima   ?? [];
 $debetRows  = array_values(array_filter($details, fn($d) => (float)$d['debet']  > 0));
 $kreditRows = array_values(array_filter($details, fn($d) => (float)$d['kredit'] > 0));
 $kreditRow  = $kreditRows[0] ?? null;
@@ -403,6 +437,48 @@ $hasKegiatan = ! empty($kegiatan) && (
         <div class="label-sm">Total Dibayar</div>
         <div class="kredit-amount"><?= printRp((float)($kreditRow['kredit'] ?? 0)) ?></div>
     </div>
+</div>
+<?php endif; ?>
+
+<!-- Catatan Penerima -->
+<?php if (! empty($penerima)): ?>
+<div class="penerima-box">
+    <div class="pn-title">&#128101; Catatan Penerima</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:28px; text-align:center;">#</th>
+                <th>Nama Penerima</th>
+                <th class="text-right" style="width:130px;">Nominal (Rp)</th>
+                <th style="width:110px; text-align:center;">Tanda Tangan</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($penerima as $p): ?>
+            <tr>
+                <td style="text-align:center;"><?= (int)$p['urutan'] ?></td>
+                <td><?= esc($p['nama']) ?></td>
+                <td class="num">
+                    <?= (float)$p['nominal'] > 0 ? printRp((float)$p['nominal']) : '—' ?>
+                </td>
+                <td class="ttd-penerima">
+                    <span class="ttd-penerima-num"><?= (int)$p['urutan'] ?>.</span>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+        <?php
+        $totalPenerima = array_sum(array_column($penerima, 'nominal'));
+        if ($totalPenerima > 0):
+        ?>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align:right;">Total Penerima</td>
+                <td class="num"><?= printRp($totalPenerima) ?></td>
+            </tr>
+        </tfoot>
+        <?php endif; ?>
+    </table>
 </div>
 <?php endif; ?>
 

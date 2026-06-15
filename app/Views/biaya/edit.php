@@ -33,11 +33,21 @@
 
 <?= $this->section('content') ?>
 <?php
+$header    = $header    ?? [];
+$kegiatan  = $kegiatan  ?? [];
+$penerima  = $penerima  ?? [];
+$debetRows = $debetRows ?? [];
+$kreditRow = $kreditRow ?? null;
+
 $periodeList  = $periodeList  ?? [];
-$periodeAktif = $periodeAktif ?? null;
 $rekeningList = $rekeningList ?? [];
 $akunList     = $akunList     ?? [];
-$old = fn(string $k, $d = '') => old($k, $d);
+
+// Untuk validasi redirect-back, old() menang; fallback ke nilai DB
+$o = fn(string $k, $d = '') => (old($k) !== null && old($k) !== '') ? old($k) : $d;
+
+$currentPeriodeId  = (int)$o('periode_id',  $header['periode_id']           ?? '');
+$currentRekeningId = (int)$o('rekening_id', $kreditRow['rekening_bank_id']  ?? '');
 ?>
 
 <div class="container-fluid">
@@ -45,10 +55,10 @@ $old = fn(string $k, $d = '') => old($k, $d);
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <h4 class="mb-0 fw-bold">Input Biaya Operasional</h4>
-            <small class="text-muted">Catat pengeluaran operasional kegiatan dengan satu rekening sumber dana</small>
+            <h4 class="mb-0 fw-bold">Edit Biaya Operasional</h4>
+            <small class="text-muted font-monospace"><?= esc($header['nomor_jurnal'] ?? '') ?></small>
         </div>
-        <a href="<?= base_url('biaya') ?>" class="btn btn-outline-secondary btn-sm">
+        <a href="<?= base_url('biaya/' . ($header['id'] ?? '')) ?>" class="btn btn-outline-secondary btn-sm">
             <i class="fa fa-arrow-left me-1"></i> Kembali
         </a>
     </div>
@@ -69,10 +79,10 @@ $old = fn(string $k, $d = '') => old($k, $d);
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= base_url('biaya/store') ?>" id="formBiaya">
+    <form method="post" action="<?= base_url('biaya/update/' . ($header['id'] ?? '')) ?>" id="formBiaya">
     <?= csrf_field() ?>
 
-    <!-- ─── Info Kegiatan ─── -->
+    <!-- ─── Info Transaksi ─── -->
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-transparent border-bottom py-2">
             <span class="fw-semibold small text-uppercase text-muted">
@@ -82,28 +92,22 @@ $old = fn(string $k, $d = '') => old($k, $d);
         <div class="card-body">
             <div class="row g-3">
 
-                <!-- Tanggal -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Tanggal <span class="text-danger">*</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Tanggal <span class="text-danger">*</span></label>
                     <input type="date" name="tanggal" id="tanggal"
                            class="form-control form-control-sm"
-                           value="<?= $old('tanggal', date('Y-m-d')) ?>"
+                           value="<?= esc($o('tanggal', $header['tanggal'] ?? date('Y-m-d'))) ?>"
                            required onchange="autoDetectPeriode()">
                 </div>
 
-                <!-- Periode -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Periode <span class="text-danger">*</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Periode <span class="text-danger">*</span></label>
                     <select name="periode_id" id="periodeId" class="form-select form-select-sm" required>
                         <option value="">— Pilih Periode —</option>
                         <?php foreach ($periodeList as $p): ?>
                             <option value="<?= $p['id'] ?>"
                                 data-bulan="<?= $p['bulan'] ?>" data-tahun="<?= $p['tahun'] ?>"
-                                <?= $old('periode_id', $periodeAktif['id'] ?? '') == $p['id'] ? 'selected' : '' ?>>
+                                <?= $currentPeriodeId == $p['id'] ? 'selected' : '' ?>>
                                 <?= esc($p['nama']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -111,92 +115,68 @@ $old = fn(string $k, $d = '') => old($k, $d);
                     <div class="form-text">Hanya periode aktif (belum ditutup).</div>
                 </div>
 
-                <!-- No. Jurnal -->
                 <div class="col-12 col-md-3">
                     <label class="form-label form-label-sm fw-semibold text-muted">No. Jurnal</label>
                     <input type="text" class="form-control form-control-sm bg-light text-muted font-monospace"
-                           value="BYA / auto-generate" readonly tabindex="-1">
+                           value="<?= esc($header['nomor_jurnal'] ?? '') ?>" readonly tabindex="-1">
                 </div>
 
-                <!-- Uraian Singkat -->
                 <div class="col-12 col-md-9">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Uraian / Judul Biaya <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" name="uraian" id="uraian"
+                    <label class="form-label form-label-sm fw-semibold">Uraian / Judul Biaya <span class="text-danger">*</span></label>
+                    <input type="text" name="uraian"
                            class="form-control form-control-sm"
-                           value="<?= esc($old('uraian')) ?>"
+                           value="<?= esc($o('uraian', $header['uraian'] ?? '')) ?>"
                            maxlength="255" required
-                           placeholder="cth: Biaya Konsumsi Rapat Koordinasi Agustus 2026">
+                           placeholder="cth: Biaya Konsumsi Rapat Koordinasi">
                 </div>
 
-                <!-- Keterangan -->
                 <div class="col-12">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Keterangan <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Keterangan <span class="text-muted fw-normal">(opsional)</span></label>
                     <textarea name="keterangan" class="form-control form-control-sm" rows="2"
-                              maxlength="500" placeholder="Catatan tambahan..."><?= esc($old('keterangan')) ?></textarea>
+                              maxlength="500" placeholder="Catatan tambahan..."><?= esc($o('keterangan', $header['keterangan'] ?? '')) ?></textarea>
                 </div>
 
-                <!-- ─── Detail Kegiatan ─── -->
-                <div class="col-12">
-                    <div class="section-divider"><span>Detail Kegiatan</span></div>
-                </div>
+                <div class="col-12"><div class="section-divider"><span>Detail Kegiatan</span></div></div>
 
-                <!-- Program / Nama Kegiatan -->
                 <div class="col-12 col-md-6">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Program / Nama Kegiatan
-                        <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Program / Nama Kegiatan <span class="text-muted fw-normal">(opsional)</span></label>
                     <input type="text" name="nama_kegiatan" class="form-control form-control-sm"
-                           value="<?= esc($old('nama_kegiatan')) ?>"
-                           maxlength="255"
-                           placeholder="cth: Rapat Koordinasi, Survei Lapangan Penerima">
+                           value="<?= esc($o('nama_kegiatan', $kegiatan['nama_kegiatan'] ?? '')) ?>"
+                           maxlength="255" placeholder="cth: Rapat Koordinasi">
                 </div>
 
-                <!-- Lokasi -->
                 <div class="col-12 col-md-6">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Lokasi
-                        <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Lokasi <span class="text-muted fw-normal">(opsional)</span></label>
                     <input type="text" name="lokasi" class="form-control form-control-sm"
-                           value="<?= esc($old('lokasi')) ?>"
-                           maxlength="255"
-                           placeholder="cth: Kantor LazisMu UMS, Surakarta">
+                           value="<?= esc($o('lokasi', $kegiatan['lokasi'] ?? '')) ?>"
+                           maxlength="255" placeholder="cth: Kantor LazisMu UMS">
                 </div>
 
-                <!-- Waktu Berangkat -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Waktu Berangkat
-                        <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Waktu Berangkat <span class="text-muted fw-normal">(opsional)</span></label>
+                    <?php
+                    $tglB = $kegiatan['tgl_berangkat'] ?? '';
+                    $tglB = ($tglB && $tglB !== '0000-00-00 00:00:00') ? date('Y-m-d\TH:i', strtotime($tglB)) : '';
+                    ?>
                     <input type="datetime-local" name="tgl_berangkat" class="form-control form-control-sm"
-                           value="<?= esc($old('tgl_berangkat')) ?>">
+                           value="<?= esc($o('tgl_berangkat', $tglB)) ?>">
                 </div>
 
-                <!-- Waktu Kembali -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Waktu Kembali
-                        <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Waktu Kembali <span class="text-muted fw-normal">(opsional)</span></label>
+                    <?php
+                    $tglK = $kegiatan['tgl_kembali'] ?? '';
+                    $tglK = ($tglK && $tglK !== '0000-00-00 00:00:00') ? date('Y-m-d\TH:i', strtotime($tglK)) : '';
+                    ?>
                     <input type="datetime-local" name="tgl_kembali" class="form-control form-control-sm"
-                           value="<?= esc($old('tgl_kembali')) ?>">
+                           value="<?= esc($o('tgl_kembali', $tglK)) ?>">
                 </div>
 
-                <!-- Uraian Kegiatan -->
                 <div class="col-12">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Deskripsi Kegiatan
-                        <span class="text-muted fw-normal">(opsional)</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Deskripsi Kegiatan <span class="text-muted fw-normal">(opsional)</span></label>
                     <textarea name="uraian_kegiatan" class="form-control form-control-sm" rows="3"
                               maxlength="2000"
-                              placeholder="Deskripsi lengkap kegiatan: agenda, peserta, tujuan, hasil kegiatan, dsb..."><?= esc($old('uraian_kegiatan')) ?></textarea>
+                              placeholder="Deskripsi lengkap kegiatan..."><?= esc($o('uraian_kegiatan', $kegiatan['uraian_kegiatan'] ?? '')) ?></textarea>
                 </div>
 
             </div>
@@ -213,9 +193,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
         <div class="card-body">
             <div class="row g-3 align-items-start">
                 <div class="col-12 col-md-6">
-                    <label class="form-label form-label-sm fw-semibold">
-                        Rekening Bank <span class="text-danger">*</span>
-                    </label>
+                    <label class="form-label form-label-sm fw-semibold">Rekening Bank <span class="text-danger">*</span></label>
                     <select name="rekening_id" id="rekeningId" class="form-select form-select-sm" required>
                         <option value="">— Pilih Rekening —</option>
                         <?php
@@ -231,7 +209,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
                                 data-jenis-dana-id="<?= $rek['jenis_dana_id'] ?>"
                                 data-akun-id="<?= $rek['akun_id'] ?>"
                                 data-nama-dana="<?= esc($rek['nama_dana']) ?>"
-                                <?= $old('rekening_id') == $rek['id'] ? 'selected' : '' ?>>
+                                <?= $currentRekeningId == $rek['id'] ? 'selected' : '' ?>>
                                 <?= esc($rek['nama']) ?>
                                 <?= $rek['nomor_rekening'] ? '— ' . $rek['nomor_rekening'] : '' ?>
                                 (<?= esc($rek['bank']) ?>)
@@ -272,7 +250,43 @@ $old = fn(string $k, $d = '') => old($k, $d);
                             <th style="width:40px;"></th>
                         </tr>
                     </thead>
-                    <tbody id="detailBody"></tbody>
+                    <!-- Baris existing di-render langsung dari PHP -->
+                    <tbody id="detailBody">
+                    <?php foreach ($debetRows as $i => $row):
+                        $jumlahFmt = number_format((float)$row['debet'], 0, ',', '.');
+                    ?>
+                        <tr data-row="<?= $i + 1 ?>">
+                            <td class="row-num"><?= $i + 1 ?></td>
+                            <td>
+                                <select name="akun_id[]" class="form-select form-select-sm ts-akun" required>
+                                    <option value="">— Pilih Akun —</option>
+                                    <?php foreach ($akunList as $a): ?>
+                                        <option value="<?= $a['id'] ?>" data-tipe="<?= esc($a['tipe']) ?>"
+                                            <?= (int)$a['id'] === (int)$row['akun_id'] ? 'selected' : '' ?>>
+                                            <?= esc($a['nomor_akun'] . ' — ' . $a['nama_akun']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" name="uraian_det[]" class="form-control form-control-sm"
+                                       value="<?= esc($row['uraian'] ?? '') ?>"
+                                       placeholder="Keterangan baris (opsional)" maxlength="255">
+                            </td>
+                            <td>
+                                <input type="text" name="jumlah[]"
+                                       class="form-control form-control-sm text-end jumlah-input"
+                                       value="<?= $jumlahFmt ?>"
+                                       placeholder="0" autocomplete="off" required>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn-del-row" title="Hapus baris">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
                     <tfoot class="total-bar">
                         <tr>
                             <td colspan="3" class="px-3 text-end fw-semibold small">Total Pengeluaran:</td>
@@ -290,7 +304,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
         <div class="card-header bg-transparent border-bottom py-2 d-flex justify-content-between align-items-center">
             <span class="fw-semibold small text-uppercase text-muted">
                 <i class="fa fa-users me-1"></i> Catatan Penerima
-                <span class="fw-normal text-muted normal-case">(opsional)</span>
+                <span class="fw-normal text-muted">(opsional)</span>
             </span>
             <button type="button" id="btnAddPenerima" class="btn btn-sm btn-outline-primary py-0 px-2">
                 <i class="fa fa-plus fa-xs me-1"></i> Tambah Penerima
@@ -298,7 +312,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-sm detail-table mb-0" id="penerimaTable">
+                <table class="table table-sm detail-table mb-0">
                     <thead class="table-light">
                         <tr>
                             <th class="row-num px-2">#</th>
@@ -307,12 +321,41 @@ $old = fn(string $k, $d = '') => old($k, $d);
                             <th style="width:40px;"></th>
                         </tr>
                     </thead>
+                    <!-- Baris penerima existing di-render dari PHP -->
                     <tbody id="penerimaBody">
+                    <?php if (empty($penerima)): ?>
                         <tr id="penerimaEmpty">
                             <td colspan="4" class="text-center text-muted py-3 small fst-italic">
                                 Belum ada penerima &mdash; klik "Tambah Penerima" untuk menambahkan.
                             </td>
                         </tr>
+                    <?php else: ?>
+                        <?php foreach ($penerima as $i => $p):
+                            $nomFmt = (float)$p['nominal'] > 0
+                                ? number_format((float)$p['nominal'], 0, ',', '.') : '';
+                        ?>
+                        <tr data-prow="<?= $i + 1 ?>">
+                            <td class="row-num"><?= $i + 1 ?></td>
+                            <td>
+                                <input type="text" name="penerima_nama[]"
+                                       class="form-control form-control-sm"
+                                       value="<?= esc($p['nama']) ?>"
+                                       placeholder="cth: Bp. Budi Setiawan" maxlength="255">
+                            </td>
+                            <td>
+                                <input type="text" name="penerima_nominal[]"
+                                       class="form-control form-control-sm text-end penerima-nominal"
+                                       value="<?= $nomFmt ?>"
+                                       placeholder="0" autocomplete="off">
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn-del-row" title="Hapus baris">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -349,9 +392,9 @@ $old = fn(string $k, $d = '') => old($k, $d);
 
     <!-- Submit -->
     <div class="d-flex gap-2 justify-content-end mb-4">
-        <a href="<?= base_url('biaya') ?>" class="btn btn-outline-secondary">Batal</a>
-        <button type="submit" id="btnSubmit" class="btn btn-primary px-4" disabled>
-            <i class="fa fa-save me-1"></i> Simpan Biaya
+        <a href="<?= base_url('biaya/' . ($header['id'] ?? '')) ?>" class="btn btn-outline-secondary">Batal</a>
+        <button type="submit" id="btnSubmit" class="btn btn-warning px-4">
+            <i class="fa fa-save me-1"></i> Simpan Perubahan
         </button>
     </div>
 
@@ -369,13 +412,18 @@ $old = fn(string $k, $d = '') => old($k, $d);
         'tipe'  => $a['tipe'],
     ], $akunList)) ?>;
 
-    // ── Periode auto-detect ───────────────────────────────────
     const periodeOptions = <?= json_encode(array_map(fn($p) => [
         'id'    => $p['id'],
         'bulan' => (int)$p['bulan'],
         'tahun' => (int)$p['tahun'],
     ], $periodeList)) ?>;
 
+    // ── DOM elements (semua di atas sebelum ada yang dipakai) ─
+    const rekeningEl   = document.getElementById('rekeningId');
+    const tbody        = document.getElementById('detailBody');
+    const penerimaBody = document.getElementById('penerimaBody');
+
+    // ── Periode auto-detect ───────────────────────────────────
     window.autoDetectPeriode = function () {
         const val = document.getElementById('tanggal').value;
         if (!val) return;
@@ -386,34 +434,117 @@ $old = fn(string $k, $d = '') => old($k, $d);
         if (found) document.getElementById('periodeId').value = found.id;
     };
 
-    // ── Rekening select → badge dana ─────────────────────────
-    const rekeningEl = document.getElementById('rekeningId');
+    // ── Rekening → badge dana ─────────────────────────────────
     new TomSelect('#rekeningId', { maxOptions: 100, allowEmptyOption: true });
 
-    rekeningEl.addEventListener('change', function () {
-        const opt = this.options[this.selectedIndex];
+    function refreshDanaBadge() {
+        const opt   = rekeningEl.options[rekeningEl.selectedIndex];
         const badge = document.getElementById('danaBadge');
         if (opt && opt.value) {
-            const nama = opt.dataset.namaDana || '—';
-            badge.innerHTML = `<span class="badge" style="background:#E8622A;">${nama}</span>`;
+            badge.innerHTML = `<span class="badge" style="background:#E8622A;">${opt.dataset.namaDana || '—'}</span>`;
         } else {
             badge.innerHTML = '<span class="badge bg-light text-muted border">— pilih rekening —</span>';
         }
         updatePreview();
-    });
+    }
+    rekeningEl.addEventListener('change', function () { refreshDanaBadge(); });
+    refreshDanaBadge();
 
-    // ── Rows ──────────────────────────────────────────────────
-    let rowCount = 0;
-    const tbody  = document.getElementById('detailBody');
+    // ── Helpers ───────────────────────────────────────────────
 
     function fmtRp(n) {
         return 'Rp ' + (n || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
     }
-
     function parseNum(v) {
         return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
     }
 
+    function recalculate() {
+        let total = 0;
+        tbody.querySelectorAll('.jumlah-input').forEach(inp => { total += parseNum(inp.value); });
+        document.getElementById('grandTotal').textContent = fmtRp(total);
+        updatePreview();
+        const hasRekening = !!rekeningEl.value;
+        document.getElementById('btnSubmit').disabled = !(tbody.rows.length > 0 && hasRekening && total > 0);
+    }
+
+    function updatePreview() {
+        const opt  = rekeningEl.options[rekeningEl.selectedIndex];
+        const rows = [];
+        let total  = 0;
+
+        tbody.querySelectorAll('tr').forEach(tr => {
+            const sel = tr.querySelector('select[name="akun_id[]"]');
+            const jml = parseNum(tr.querySelector('.jumlah-input')?.value ?? '0');
+            if (!sel || !sel.value || jml <= 0) return;
+            rows.push({ label: sel.options[sel.selectedIndex]?.text || '—', jml });
+            total += jml;
+        });
+
+        const preview = document.getElementById('cardPreview');
+        if (!rows.length || !opt?.value || total <= 0) { preview.style.display = 'none'; return; }
+
+        document.getElementById('previewBody').innerHTML =
+            rows.map(r => `<tr>
+                <td class="px-3 text-muted">${r.label}</td>
+                <td class="text-end text-success fw-semibold">${fmtRp(r.jml)}</td>
+                <td class="text-end pe-3 text-muted">—</td>
+            </tr>`).join('') + `<tr>
+                <td class="px-3 text-muted fst-italic ps-4">${opt.text.trim()}</td>
+                <td class="text-end text-muted">—</td>
+                <td class="text-end pe-3 text-danger fw-semibold">${fmtRp(total)}</td>
+            </tr>`;
+
+        document.getElementById('previewTotalDebet').textContent  = fmtRp(total);
+        document.getElementById('previewTotalKredit').textContent = fmtRp(total);
+        preview.style.display = '';
+    }
+
+    // ── Attach listeners ke satu baris detail ────────────────
+    function attachRowListeners(tr) {
+        const jumlahEl = tr.querySelector('.jumlah-input');
+        jumlahEl.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9.,]/g, '');
+            recalculate();
+        });
+        jumlahEl.addEventListener('blur', function () {
+            const n = parseNum(this.value);
+            if (n > 0) this.value = n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+            recalculate();
+        });
+        tr.querySelector('.btn-del-row').addEventListener('click', function () {
+            if (tbody.rows.length > 1) {
+                tr.remove(); reNumber(); recalculate();
+            } else {
+                alert('Minimal 1 baris pengeluaran diperlukan.');
+            }
+        });
+    }
+
+    function reNumber() {
+        let i = 0;
+        Array.from(tbody.rows).forEach(r => {
+            i++;
+            r.querySelector('.row-num').textContent = i;
+        });
+        rowCount = i;
+    }
+
+    // ── Init TomSelect + listeners pada baris existing (dari PHP) ──
+    let rowCount = <?= count($debetRows) ?>;
+
+    tbody.querySelectorAll('.ts-akun').forEach(sel => {
+        new TomSelect(sel, {
+            maxOptions: 500,
+            allowEmptyOption: true,
+            onChange() { updatePreview(); },
+        });
+    });
+
+    Array.from(tbody.rows).forEach(tr => attachRowListeners(tr));
+    recalculate();
+
+    // ── Tambah baris baru (kosong) ────────────────────────────
     function addRow() {
         rowCount++;
         const tr = document.createElement('tr');
@@ -440,106 +571,54 @@ $old = fn(string $k, $d = '') => old($k, $d);
                 </button>
             </td>`;
         tbody.appendChild(tr);
-
-        // Tom Select on akun
         new TomSelect(tr.querySelector('select[name="akun_id[]"]'), {
-            maxOptions: 500,
-            allowEmptyOption: true,
+            maxOptions: 500, allowEmptyOption: true,
             onChange() { updatePreview(); },
         });
-
-        // Jumlah input
-        const jumlahEl = tr.querySelector('.jumlah-input');
-        jumlahEl.addEventListener('input', function () {
-            this.value = this.value.replace(/[^0-9.,]/g, '');
-            recalculate();
-        });
-        jumlahEl.addEventListener('blur', function () {
-            const n = parseNum(this.value);
-            if (n > 0) this.value = n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-            recalculate();
-        });
-
-        // Delete row
-        tr.querySelector('.btn-del-row').addEventListener('click', function () {
-            if (tbody.rows.length > 1) {
-                tr.remove();
-                reNumber();
-                recalculate();
-            } else {
-                alert('Minimal 1 baris pengeluaran diperlukan.');
-            }
-        });
-
+        attachRowListeners(tr);
         recalculate();
     }
 
-    function reNumber() {
-        rowCount = 0;
-        Array.from(tbody.rows).forEach(r => {
-            rowCount++;
-            r.querySelector('.row-num').textContent = rowCount;
+    document.getElementById('btnAddRow').addEventListener('click', addRow);
+
+    // ── Penerima ──────────────────────────────────────────────
+    let penerimaCount = <?= count($penerima) ?>;
+
+    function attachPenerimaListeners(tr) {
+        const nomEl = tr.querySelector('.penerima-nominal');
+        nomEl.addEventListener('input',  function () { this.value = this.value.replace(/[^0-9.,]/g, ''); });
+        nomEl.addEventListener('blur',   function () {
+            const n = parseNum(this.value);
+            if (n > 0) this.value = n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        });
+        tr.querySelector('.btn-del-row').addEventListener('click', function () {
+            tr.remove();
+            reNumberPenerima();
+            if (!penerimaBody.querySelector('tr[data-prow]')) {
+                penerimaBody.innerHTML = `<tr id="penerimaEmpty">
+                    <td colspan="4" class="text-center text-muted py-3 small fst-italic">
+                        Belum ada penerima &mdash; klik "Tambah Penerima" untuk menambahkan.
+                    </td></tr>`;
+            }
         });
     }
 
-    function recalculate() {
-        let total = 0;
-        tbody.querySelectorAll('.jumlah-input').forEach(inp => { total += parseNum(inp.value); });
-        document.getElementById('grandTotal').textContent = fmtRp(total);
-        updatePreview();
-
-        const hasRows     = tbody.rows.length > 0;
-        const hasRekening = !!document.getElementById('rekeningId').value;
-        document.getElementById('btnSubmit').disabled = !(hasRows && hasRekening && total > 0);
-    }
-
-    function updatePreview() {
-        const rekeningEl  = document.getElementById('rekeningId');
-        const rekeningOpt = rekeningEl.options[rekeningEl.selectedIndex];
-
-        const rows = [];
-        let total  = 0;
-
-        tbody.querySelectorAll('tr').forEach(tr => {
-            const sel  = tr.querySelector('select[name="akun_id[]"]');
-            const jml  = parseNum(tr.querySelector('.jumlah-input')?.value ?? '0');
-            if (!sel || !sel.value || jml <= 0) return;
-            const label = sel.options[sel.selectedIndex]?.text || '—';
-            rows.push({ label, jml });
-            total += jml;
+    function reNumberPenerima() {
+        let i = 0;
+        penerimaBody.querySelectorAll('tr[data-prow]').forEach(r => {
+            i++;
+            r.dataset.prow = i;
+            r.querySelector('.row-num').textContent = i;
         });
-
-        const preview = document.getElementById('cardPreview');
-        if (rows.length === 0 || !rekeningOpt?.value || total <= 0) {
-            preview.style.display = 'none';
-            return;
-        }
-
-        const pbody = document.getElementById('previewBody');
-        pbody.innerHTML = rows.map(r => `
-            <tr>
-                <td class="px-3 text-muted">${r.label}</td>
-                <td class="text-end text-success fw-semibold">${fmtRp(r.jml)}</td>
-                <td class="text-end pe-3 text-muted">—</td>
-            </tr>`).join('') + `
-            <tr>
-                <td class="px-3 text-muted fst-italic ps-4">${rekeningOpt.text.trim()}</td>
-                <td class="text-end text-muted">—</td>
-                <td class="text-end pe-3 text-danger fw-semibold">${fmtRp(total)}</td>
-            </tr>`;
-
-        document.getElementById('previewTotalDebet').textContent  = fmtRp(total);
-        document.getElementById('previewTotalKredit').textContent = fmtRp(total);
-        preview.style.display = '';
+        penerimaCount = i;
     }
 
-    // ── Penerima rows ─────────────────────────────────────────
-    let penerimaCount = 0;
-    const penerimaBody = document.getElementById('penerimaBody');
-    const penerimaEmpty = document.getElementById('penerimaEmpty');
+    // Attach listeners ke baris penerima existing
+    penerimaBody.querySelectorAll('tr[data-prow]').forEach(tr => attachPenerimaListeners(tr));
 
     function addPenerimaRow() {
-        penerimaEmpty.style.display = 'none';
+        const empty = document.getElementById('penerimaEmpty');
+        if (empty) empty.remove();
         penerimaCount++;
         const tr = document.createElement('tr');
         tr.dataset.prow = penerimaCount;
@@ -548,8 +627,7 @@ $old = fn(string $k, $d = '') => old($k, $d);
             <td>
                 <input type="text" name="penerima_nama[]"
                        class="form-control form-control-sm"
-                       placeholder="cth: Bp. Budi Setiawan"
-                       maxlength="255">
+                       placeholder="cth: Bp. Budi Setiawan" maxlength="255">
             </td>
             <td>
                 <input type="text" name="penerima_nominal[]"
@@ -562,40 +640,12 @@ $old = fn(string $k, $d = '') => old($k, $d);
                 </button>
             </td>`;
         penerimaBody.appendChild(tr);
-
-        const nomEl = tr.querySelector('.penerima-nominal');
-        nomEl.addEventListener('input', function () {
-            this.value = this.value.replace(/[^0-9.,]/g, '');
-        });
-        nomEl.addEventListener('blur', function () {
-            const n = parseNum(this.value);
-            if (n > 0) this.value = n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-        });
-
-        tr.querySelector('.btn-del-row').addEventListener('click', function () {
-            tr.remove();
-            reNumberPenerima();
-            if (penerimaBody.querySelectorAll('tr[data-prow]').length === 0) {
-                penerimaEmpty.style.display = '';
-            }
-        });
-    }
-
-    function reNumberPenerima() {
-        penerimaCount = 0;
-        penerimaBody.querySelectorAll('tr[data-prow]').forEach(r => {
-            penerimaCount++;
-            r.dataset.prow = penerimaCount;
-            r.querySelector('.row-num').textContent = penerimaCount;
-        });
+        attachPenerimaListeners(tr);
     }
 
     document.getElementById('btnAddPenerima').addEventListener('click', addPenerimaRow);
 
-    // ── Init ──────────────────────────────────────────────────
-    document.getElementById('btnAddRow').addEventListener('click', addRow);
-
-    // Strip formatting before submit
+    // ── Strip formatting sebelum submit ───────────────────────
     document.getElementById('formBiaya').addEventListener('submit', function () {
         tbody.querySelectorAll('.jumlah-input').forEach(inp => {
             inp.value = String(parseNum(inp.value));
@@ -604,11 +654,6 @@ $old = fn(string $k, $d = '') => old($k, $d);
             inp.value = String(parseNum(inp.value));
         });
     });
-
-    // Start with 2 rows
-    addRow();
-    addRow();
-    autoDetectPeriode();
 })();
 </script>
 <?= $this->endSection() ?>

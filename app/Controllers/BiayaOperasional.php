@@ -222,6 +222,27 @@ class BiayaOperasional extends BaseController
             'updated_at'      => $now,
         ]);
 
+        // Simpan catatan penerima (opsional)
+        $penerimaNames    = (array)($this->request->getPost('penerima_nama')    ?? []);
+        $penerimaNominals = (array)($this->request->getPost('penerima_nominal') ?? []);
+        $penerimaRows     = [];
+        foreach ($penerimaNames as $i => $nama) {
+            $nama    = trim($nama);
+            $nominal = (float)str_replace(['.', ','], ['', '.'], $penerimaNominals[$i] ?? '0');
+            if ($nama === '') continue;
+            $penerimaRows[] = [
+                'jurnal_id'  => $jurnalId,
+                'urutan'     => count($penerimaRows) + 1,
+                'nama'       => $nama,
+                'nominal'    => $nominal,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if (! empty($penerimaRows)) {
+            $db->table('biaya_penerima')->insertBatch($penerimaRows);
+        }
+
         $db->transComplete();
 
         if (! $db->transStatus()) {
@@ -233,6 +254,195 @@ class BiayaOperasional extends BaseController
             ->with('success', "Biaya operasional {$nomorJurnal} berhasil disimpan.");
     }
 
+    // ── Form Edit ─────────────────────────────────────────────
+    public function edit(int $id)
+    {
+        $data = $this->jurnalModel->getBiayaWithDetail($id);
+        if (empty($data) || ($data['header']['jenis_transaksi'] ?? '') !== 'biaya') {
+            return redirect()->to('biaya')->with('error', 'Data tidak ditemukan.');
+        }
+
+        $periode = $this->periodeModel->find($data['header']['periode_id']);
+        if ($periode && $periode['is_tutup']) {
+            return redirect()->to('biaya/' . $id)
+                ->with('error', 'Periode sudah ditutup. Data tidak dapat diedit.');
+        }
+
+        $db       = \Config\Database::connect();
+        $kegiatan = $db->table('biaya_kegiatan')
+            ->where('jurnal_id', $id)->get()->getRowArray() ?? [];
+        $penerima = $db->table('biaya_penerima')
+            ->where('jurnal_id', $id)->orderBy('urutan', 'ASC')->get()->getResultArray();
+
+        $debetRows = array_values(array_filter(
+            $data['details'], fn($d) => (float)$d['debet'] > 0
+        ));
+        $kreditRow = array_values(array_filter(
+            $data['details'], fn($d) => (float)$d['kredit'] > 0
+        ))[0] ?? null;
+
+        return view('biaya/edit', [
+            'pageTitle'       => 'Edit Biaya Operasional',
+            'header'          => $data['header'],
+            'debetRows'       => $debetRows,
+            'kreditRow'       => $kreditRow,
+            'kegiatan'        => $kegiatan,
+            'penerima'        => $penerima,
+            'periodeList'     => $this->periodeModel->getAktif(),
+            'rekeningList'    => $this->rekeningModel->getAllWithRelasi(),
+            'akunList'        => $this->akunModel
+                ->where('is_header', 0)->orderBy('nomor_akun', 'ASC')->findAll(),
+        ]);
+    }
+
+    // ── Update ────────────────────────────────────────────────
+    public function update(int $id)
+    {
+        $jurnal = $this->jurnalModel->find($id);
+        if (! $jurnal || $jurnal['jenis_transaksi'] !== 'biaya') {
+            return redirect()->to('biaya')->with('error', 'Data tidak ditemukan.');
+        }
+
+        $rules = [
+            'tanggal'     => 'required|valid_date',
+            'periode_id'  => 'required|is_natural_no_zero',
+            'rekening_id' => 'required|is_natural_no_zero',
+            'uraian'      => 'required|min_length[3]|max_length[255]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $periodeId = (int)$this->request->getPost('periode_id');
+        $periode   = $this->periodeModel->find($periodeId);
+        if (! $periode || $periode['is_tutup']) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Periode sudah ditutup atau tidak ditemukan.');
+        }
+
+        $rekeningId = (int)$this->request->getPost('rekening_id');
+        $rekening   = \Config\Database::connect()
+            ->table('rekening_bank rb')
+            ->select('rb.*, jd.nama AS nama_dana')
+            ->join('jenis_dana jd', 'jd.id = rb.jenis_dana_id', 'left')
+            ->where('rb.id', $rekeningId)
+            ->get()->getRowArray();
+
+        if (! $rekening) {
+            return redirect()->back()->withInput()->with('error', 'Rekening tidak ditemukan.');
+        }
+
+        $akunIds    = (array)($this->request->getPost('akun_id')    ?? []);
+        $uraianDets = (array)($this->request->getPost('uraian_det') ?? []);
+        $jumlahArr  = (array)($this->request->getPost('jumlah')     ?? []);
+
+        $details = [];
+        $total   = 0.0;
+        $now     = date('Y-m-d H:i:s');
+
+        foreach ($akunIds as $i => $akunId) {
+            $jml = (float)str_replace(['.', ','], ['', '.'], $jumlahArr[$i] ?? '0');
+            if ((int)$akunId === 0 || $jml <= 0) continue;
+            $total += $jml;
+            $details[] = [
+                'jurnal_id'        => $id,
+                'akun_id'          => (int)$akunId,
+                'rekening_bank_id' => null,
+                'uraian'           => ($uraianDets[$i] ?? '') ?: null,
+                'debet'            => $jml,
+                'kredit'           => 0,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ];
+        }
+
+        if (empty($details)) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Minimal 1 baris pengeluaran diperlukan.');
+        }
+
+        $details[] = [
+            'jurnal_id'        => $id,
+            'akun_id'          => (int)$rekening['akun_id'],
+            'rekening_bank_id' => $rekeningId,
+            'uraian'           => 'Sumber Dana: ' . $rekening['nama'],
+            'debet'            => 0,
+            'kredit'           => $total,
+            'created_at'       => $now,
+            'updated_at'       => $now,
+        ];
+
+        $namaKegiatan   = trim($this->request->getPost('nama_kegiatan')   ?? '');
+        $lokasi         = trim($this->request->getPost('lokasi')          ?? '');
+        $tglBerangkat   = $this->request->getPost('tgl_berangkat');
+        $tglKembali     = $this->request->getPost('tgl_kembali');
+        $uraianKegiatan = trim($this->request->getPost('uraian_kegiatan') ?? '');
+        $tglBerangkat   = $tglBerangkat ? date('Y-m-d H:i:s', strtotime($tglBerangkat)) : null;
+        $tglKembali     = $tglKembali   ? date('Y-m-d H:i:s', strtotime($tglKembali))   : null;
+
+        $penerimaNames    = (array)($this->request->getPost('penerima_nama')    ?? []);
+        $penerimaNominals = (array)($this->request->getPost('penerima_nominal') ?? []);
+        $penerimaRows     = [];
+        foreach ($penerimaNames as $i => $nama) {
+            $nama    = trim($nama);
+            $nominal = (float)str_replace(['.', ','], ['', '.'], $penerimaNominals[$i] ?? '0');
+            if ($nama === '') continue;
+            $penerimaRows[] = [
+                'jurnal_id'  => $id,
+                'urutan'     => count($penerimaRows) + 1,
+                'nama'       => $nama,
+                'nominal'    => $nominal,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $this->jurnalModel->update($id, [
+            'tanggal'       => $this->request->getPost('tanggal'),
+            'periode_id'    => $periodeId,
+            'jenis_dana_id' => (int)$rekening['jenis_dana_id'],
+            'uraian'        => $this->request->getPost('uraian'),
+            'keterangan'    => trim($this->request->getPost('keterangan') ?? '') ?: null,
+            'total_debet'   => $total,
+            'total_kredit'  => $total,
+            'updated_at'    => $now,
+        ]);
+
+        $db->table('jurnal_detail')->where('jurnal_id', $id)->delete();
+        $db->table('jurnal_detail')->insertBatch($details);
+
+        $db->table('biaya_kegiatan')->where('jurnal_id', $id)->delete();
+        $db->table('biaya_kegiatan')->insert([
+            'jurnal_id'       => $id,
+            'nama_kegiatan'   => $namaKegiatan   ?: null,
+            'lokasi'          => $lokasi         ?: null,
+            'tgl_berangkat'   => $tglBerangkat,
+            'tgl_kembali'     => $tglKembali,
+            'uraian_kegiatan' => $uraianKegiatan ?: null,
+            'created_at'      => $now,
+            'updated_at'      => $now,
+        ]);
+
+        $db->table('biaya_penerima')->where('jurnal_id', $id)->delete();
+        if (! empty($penerimaRows)) {
+            $db->table('biaya_penerima')->insertBatch($penerimaRows);
+        }
+
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Gagal menyimpan perubahan. Silakan coba lagi.');
+        }
+
+        return redirect()->to('biaya/' . $id)
+            ->with('success', "Biaya {$jurnal['nomor_jurnal']} berhasil diperbarui.");
+    }
+
     // ── Detail ────────────────────────────────────────────────
     public function show(int $id)
     {
@@ -241,16 +451,23 @@ class BiayaOperasional extends BaseController
             return redirect()->to('biaya')->with('error', 'Data tidak ditemukan.');
         }
 
-        $kegiatan = \Config\Database::connect()
-            ->table('biaya_kegiatan')
+        $db = \Config\Database::connect();
+
+        $kegiatan  = $db->table('biaya_kegiatan')
             ->where('jurnal_id', $id)
             ->get()->getRowArray() ?? [];
+
+        $penerima  = $db->table('biaya_penerima')
+            ->where('jurnal_id', $id)
+            ->orderBy('urutan', 'ASC')
+            ->get()->getResultArray();
 
         return view('biaya/show', [
             'pageTitle' => 'Detail Biaya Operasional',
             'header'    => $data['header'],
             'details'   => $data['details'],
             'kegiatan'  => $kegiatan,
+            'penerima'  => $penerima,
         ]);
     }
 
@@ -262,15 +479,22 @@ class BiayaOperasional extends BaseController
             return redirect()->to('biaya')->with('error', 'Data tidak ditemukan.');
         }
 
-        $kegiatan = \Config\Database::connect()
-            ->table('biaya_kegiatan')
+        $db = \Config\Database::connect();
+
+        $kegiatan = $db->table('biaya_kegiatan')
             ->where('jurnal_id', $id)
             ->get()->getRowArray() ?? [];
+
+        $penerima = $db->table('biaya_penerima')
+            ->where('jurnal_id', $id)
+            ->orderBy('urutan', 'ASC')
+            ->get()->getResultArray();
 
         return view('biaya/cetak', [
             'header'   => $data['header'],
             'details'  => $data['details'],
             'kegiatan' => $kegiatan,
+            'penerima' => $penerima,
         ]);
     }
 

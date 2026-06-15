@@ -34,6 +34,7 @@
 $header   = $header   ?? [];
 $details  = $details  ?? [];
 $kegiatan = $kegiatan ?? [];
+$penerima = $penerima ?? [];
 
 $debetRows  = array_values(array_filter($details, fn($d) => (float)$d['debet']  > 0));
 $kreditRow  = array_values(array_filter($details, fn($d) => (float)$d['kredit'] > 0));
@@ -94,6 +95,10 @@ $hasKegiatan = ! empty($kegiatan) && (
             <?php endif; ?>
 
             <?php if (! ($header['is_tutup'] ?? true)): ?>
+                <a href="<?= base_url('biaya/edit/' . $header['id']) ?>"
+                   class="btn btn-sm btn-outline-warning">
+                    <i class="fa fa-pen me-1"></i> Edit
+                </a>
                 <a href="<?= base_url('biaya/delete/' . $header['id']) ?>"
                     class="btn btn-sm btn-outline-danger"
                     onclick="return confirm('Hapus biaya <?= esc($header['nomor_jurnal']) ?>? Data tidak dapat dikembalikan.')">
@@ -209,6 +214,50 @@ $hasKegiatan = ! empty($kegiatan) && (
             </div>
 
             <!-- Detail kegiatan -->
+            <!-- Catatan Penerima -->
+            <?php if (! empty($penerima)): ?>
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-transparent border-bottom py-2">
+                    <small class="fw-semibold text-uppercase text-muted">
+                        <i class="fa fa-users me-1 text-warning"></i> Catatan Penerima
+                    </small>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0" style="font-size:.86rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-3" style="width:40px;">#</th>
+                                <th>Nama Penerima</th>
+                                <th class="text-end pe-3" style="width:160px;">Nominal (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($penerima as $p): ?>
+                            <tr>
+                                <td class="px-3 text-muted"><?= (int)$p['urutan'] ?></td>
+                                <td><?= esc($p['nama']) ?></td>
+                                <td class="text-end pe-3 num-right">
+                                    <?= (float)$p['nominal'] > 0 ? fmtRp((float)$p['nominal']) : '—' ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <?php
+                        $totalPenerima = array_sum(array_column($penerima, 'nominal'));
+                        if ($totalPenerima > 0):
+                        ?>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="px-3 text-end fw-semibold small">Total:</td>
+                                <td class="text-end pe-3 fw-bold num-right"><?= fmtRp($totalPenerima) ?></td>
+                            </tr>
+                        </tfoot>
+                        <?php endif; ?>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php if ($hasKegiatan): ?>
             <div class="card border-0 shadow-sm mt-3">
                 <div class="card-header bg-transparent border-bottom py-2">
