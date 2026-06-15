@@ -111,19 +111,36 @@ class LaporanModel
             $sdMap[$r['kode']][(int)$r['bulan']] = (float)$r['saldo_akhir'];
         }
 
-        // Pergerakan jurnal per bulan untuk periode yang belum ditutup
-        $jRows = $this->db->table('jurnal j')
-            ->select('jdt.kode, p.bulan, j.jenis_transaksi, SUM(j.total_debet) AS total')
-            ->join('jenis_dana jdt', 'jdt.id = j.jenis_dana_id')
-            ->join('periode p',      'p.id = j.periode_id')
-            ->where('p.tahun', $tahun)
-            ->whereIn('j.jenis_transaksi', ['penerimaan', 'penyaluran', 'biaya'])
-            ->groupBy('jdt.kode, p.bulan, j.jenis_transaksi')
-            ->get()->getResultArray();
+        // Pergerakan jurnal per bulan (account-based: semua jenis termasuk koreksi)
+        $jRows = $this->db->query("
+            SELECT jd.kode, p.bulan, a.tipe AS akun_tipe,
+                   SUM(det.debet) AS total_debet, SUM(det.kredit) AS total_kredit
+            FROM jurnal_detail det
+            JOIN jurnal j      ON j.id  = det.jurnal_id
+            JOIN akun a        ON a.id  = det.akun_id
+            JOIN jenis_dana jd ON jd.id = j.jenis_dana_id
+            JOIN periode p     ON p.id  = j.periode_id
+            WHERE p.tahun = ?
+              AND a.is_header = 0
+              AND a.tipe IN ('penerimaan','penyaluran','biaya')
+            GROUP BY jd.kode, p.bulan, a.tipe
+        ", [$tahun])->getResultArray();
 
         $movMap = [];
         foreach ($jRows as $r) {
-            $movMap[$r['kode']][(int)$r['bulan']][$r['jenis_transaksi']] = (float)$r['total'];
+            $kode = $r['kode'];
+            $b    = (int)$r['bulan'];
+            $d    = (float)$r['total_debet'];
+            $k    = (float)$r['total_kredit'];
+            // penerimaan: akun income dikreditkan → net = kredit − debet
+            // penyaluran/biaya: akun beban didebet → net = debet − kredit
+            if ($r['akun_tipe'] === 'penerimaan') {
+                $movMap[$kode][$b]['penerimaan'] = ($movMap[$kode][$b]['penerimaan'] ?? 0) + ($k - $d);
+            } elseif ($r['akun_tipe'] === 'penyaluran') {
+                $movMap[$kode][$b]['penyaluran'] = ($movMap[$kode][$b]['penyaluran'] ?? 0) + ($d - $k);
+            } else {
+                $movMap[$kode][$b]['biaya'] = ($movMap[$kode][$b]['biaya'] ?? 0) + ($d - $k);
+            }
         }
 
         $result = [];
@@ -329,20 +346,34 @@ class LaporanModel
             }
         }
 
-        // ── 3. Transaksi tahun ini per kode per bulan ────────────────────
+        // ── 3. Transaksi tahun ini per kode per bulan (account-based, semua jenis termasuk koreksi) ──
         $rows = $this->db->query("
-            SELECT jd.kode, p.bulan, j.jenis_transaksi, SUM(j.total_debet) AS total
-            FROM jurnal j
+            SELECT jd.kode, p.bulan, a.tipe AS akun_tipe,
+                   SUM(det.debet) AS total_debet, SUM(det.kredit) AS total_kredit
+            FROM jurnal_detail det
+            JOIN jurnal j      ON j.id  = det.jurnal_id
+            JOIN akun a        ON a.id  = det.akun_id
             JOIN jenis_dana jd ON jd.id = j.jenis_dana_id
             JOIN periode p     ON p.id  = j.periode_id
             WHERE p.tahun = ?
-              AND j.jenis_transaksi IN ('penerimaan','penyaluran','biaya')
-            GROUP BY jd.kode, p.bulan, j.jenis_transaksi
+              AND a.is_header = 0
+              AND a.tipe IN ('penerimaan','penyaluran','biaya')
+            GROUP BY jd.kode, p.bulan, a.tipe
         ", [$tahun])->getResultArray();
 
         $movMap = [];
         foreach ($rows as $r) {
-            $movMap[$r['kode']][(int)$r['bulan']][$r['jenis_transaksi']] = (float)$r['total'];
+            $kode = $r['kode'];
+            $b    = (int)$r['bulan'];
+            $d    = (float)$r['total_debet'];
+            $k    = (float)$r['total_kredit'];
+            if ($r['akun_tipe'] === 'penerimaan') {
+                $movMap[$kode][$b]['penerimaan'] = ($movMap[$kode][$b]['penerimaan'] ?? 0) + ($k - $d);
+            } elseif ($r['akun_tipe'] === 'penyaluran') {
+                $movMap[$kode][$b]['penyaluran'] = ($movMap[$kode][$b]['penyaluran'] ?? 0) + ($d - $k);
+            } else {
+                $movMap[$kode][$b]['biaya'] = ($movMap[$kode][$b]['biaya'] ?? 0) + ($d - $k);
+            }
         }
 
         // ── 4. Hitung saldo_awal / delta / saldo_akhir per bulan ─────────

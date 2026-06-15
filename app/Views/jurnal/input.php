@@ -98,6 +98,7 @@ $old           = fn(string $k, $def = '') => old($k, $def);
                     <select name="jenis_transaksi" class="form-select form-select-sm" required>
                         <option value="biaya"       <?= $old('jenis_transaksi','biaya') === 'biaya'       ? 'selected' : '' ?>>Biaya Operasional</option>
                         <option value="jurnal_umum" <?= $old('jenis_transaksi','biaya') === 'jurnal_umum' ? 'selected' : '' ?>>Jurnal Umum / Penyesuaian</option>
+                        <option value="koreksi"     <?= $old('jenis_transaksi','biaya') === 'koreksi'     ? 'selected' : '' ?>>Jurnal Koreksi</option>
                     </select>
                 </div>
                 <div class="col-sm-8">

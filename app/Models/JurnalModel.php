@@ -23,6 +23,7 @@ class JurnalModel extends Model
             'penerimaan'  => 'PNR',
             'penyaluran'  => 'PSL',
             'biaya'       => 'BYA',
+            'koreksi'     => 'KRK',
             'transfer'    => 'TRF',
             'piutang'     => 'PIU',
             default       => 'JRN',

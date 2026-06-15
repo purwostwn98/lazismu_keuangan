@@ -133,7 +133,7 @@ class Jurnal extends BaseController
             'tanggal'         => 'required|valid_date',
             'periode_id'      => 'required|is_natural_no_zero',
             'jenis_dana_id'   => 'required|is_natural_no_zero',
-            'jenis_transaksi' => 'required|in_list[biaya,jurnal_umum]',
+            'jenis_transaksi' => 'required|in_list[biaya,jurnal_umum,koreksi]',
             'uraian'          => 'required|min_length[3]|max_length[255]',
         ];
 
@@ -234,7 +234,7 @@ class Jurnal extends BaseController
             return redirect()->to('jurnal')->with('error', 'Jurnal tidak ditemukan.');
         }
 
-        if (! in_array($jurnal['jenis_transaksi'], ['biaya', 'jurnal_umum'])) {
+        if (! in_array($jurnal['jenis_transaksi'], ['biaya', 'jurnal_umum', 'koreksi'])) {
             return redirect()->to('jurnal')
                 ->with('error', 'Jurnal ini dikelola oleh modul lain dan tidak dapat dihapus dari sini.');
         }
