@@ -45,11 +45,30 @@
     .row-data td { background: #fff; }
     .row-data:hover td { background: #f5f7ff !important; }
 
+    .row-subsection td {
+        background: #f0f5ff !important;
+        font-weight: 600;
+        color: #2c4a8a;
+        border-top: 1px solid #c8d8f5;
+        font-style: italic;
+        padding-left: 1.2rem !important;
+    }
+
     .row-subtotal td {
         background: #fff !important;
         font-weight: 700;
         border-top: 1px solid #6c757d;
         border-bottom: 3px double #495057;
+    }
+
+    .row-dana-total td {
+        background: #dce8fc !important;
+        font-weight: 700;
+        font-size: .8rem;
+        text-transform: uppercase;
+        border-top: 2px solid #5b82c8;
+        border-bottom: 2px solid #5b82c8;
+        color: #1a3f6f;
     }
 
     .row-total td {
@@ -181,10 +200,11 @@ $grandTotal = $grandTotal ?? array_fill(1, 12, 0.0);
                             $label = $row['label'];
                             $vals  = $row['vals'] ?? [];
                             $rowTotal = array_sum($vals);
+                            $cols = count($bulanNames) + 2;
                         ?>
 
                             <?php if ($type === 'spacer'): ?>
-                                <tr class="row-spacer"><td colspan="<?= count($bulanNames) + 2 ?>"></td></tr>
+                                <tr class="row-spacer"><td colspan="<?= $cols ?>"></td></tr>
 
                             <?php elseif ($type === 'section'): ?>
                                 <tr class="row-section">
@@ -195,9 +215,18 @@ $grandTotal = $grandTotal ?? array_fill(1, 12, 0.0);
                                     <td class="total-cell"></td>
                                 </tr>
 
+                            <?php elseif ($type === 'subsection'): ?>
+                                <tr class="row-subsection">
+                                    <td class="col-label ps-4"><?= esc($label) ?></td>
+                                    <?php foreach ($bulanNames as $b => $nm): ?>
+                                        <td class="num-cell"></td>
+                                    <?php endforeach; ?>
+                                    <td class="total-cell"></td>
+                                </tr>
+
                             <?php elseif ($type === 'data'): ?>
                                 <tr class="row-data">
-                                    <td class="col-label ps-4"><?= esc($label) ?></td>
+                                    <td class="col-label ps-5"><?= esc($label) ?></td>
                                     <?php foreach ($bulanNames as $b => $nm):
                                         $v = $vals[$b] ?? 0;
                                     ?>
@@ -212,13 +241,24 @@ $grandTotal = $grandTotal ?? array_fill(1, 12, 0.0);
 
                             <?php elseif ($type === 'subtotal'): ?>
                                 <tr class="row-subtotal">
-                                    <td class="col-label ps-2"><?= esc($label) ?></td>
+                                    <td class="col-label ps-4"><?= esc($label) ?></td>
                                     <?php foreach ($bulanNames as $b => $nm):
                                         $v = $vals[$b] ?? 0;
                                     ?>
                                         <td class="num-cell <?= $v == 0 ? 'num-zero' : '' ?>">
                                             <?= $v != 0 ? number_format($v, 0, ',', '.') : '—' ?>
                                         </td>
+                                    <?php endforeach; ?>
+                                    <td class="total-cell"><?= number_format($rowTotal, 0, ',', '.') ?></td>
+                                </tr>
+
+                            <?php elseif ($type === 'dana_total'): ?>
+                                <tr class="row-dana-total">
+                                    <td class="col-label ps-2"><?= esc($label) ?></td>
+                                    <?php foreach ($bulanNames as $b => $nm):
+                                        $v = $vals[$b] ?? 0;
+                                    ?>
+                                        <td class="num-cell"><?= number_format($v, 0, ',', '.') ?></td>
                                     <?php endforeach; ?>
                                     <td class="total-cell"><?= number_format($rowTotal, 0, ',', '.') ?></td>
                                 </tr>

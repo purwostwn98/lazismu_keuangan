@@ -233,64 +233,45 @@ class Penerimaan extends BaseController
 
         $tahun = (int) ($this->request->getGet('tahun') ?? $tahunList[0]);
 
-        $raw = $this->model->getLaporanBulanan($tahun);
+        $data = $this->model->getLaporanByDanaKategori($tahun);
 
         $bulanNames = [
             1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',
             7=>'Jul',8=>'Agt',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des',
         ];
 
-        $zero12 = array_fill(1, 12, 0.0);
-
-        $getRow = function (array $keys) use ($raw, $zero12): array {
-            $row = $zero12;
-            foreach ($keys as $k) {
-                if (isset($raw[$k])) {
-                    for ($b = 1; $b <= 12; $b++) {
-                        $row[$b] += $raw[$k][$b] ?? 0.0;
-                    }
-                }
-            }
-            return $row;
-        };
-
-        $groups = PenghimpunanModel::JENIS_ZIS_GROUPS;
-        $labels = PenghimpunanModel::JENIS_ZIS_LABELS;
-
-        $rows      = [];
+        $zero12     = array_fill(1, 12, 0.0);
+        $rows       = [];
         $grandTotal = $zero12;
+        $danaTotal  = [];
 
-        foreach ($groups as $groupName => $keys) {
-            $subtotal = $zero12;
-            $dataRows = [];
+        foreach ($data as $danaId => $dana) {
+            $danaTot = $zero12;
 
-            foreach ($keys as $key) {
-                $vals = $getRow([$key]);
-                if (array_sum($vals) == 0) continue;
-                $dataRows[] = ['label' => $labels[$key] ?? $key, 'vals' => $vals];
-                for ($b = 1; $b <= 12; $b++) $subtotal[$b] += $vals[$b];
+            $rows[] = ['type' => 'section', 'label' => strtoupper($dana['nama']), 'vals' => $zero12];
+
+            foreach ($dana['parents'] as $parentId => $parent) {
+                $parentTot = $zero12;
+
+                $rows[] = ['type' => 'subsection', 'label' => $parent['nama'], 'vals' => $zero12];
+
+                foreach ($parent['children'] as $child) {
+                    $rows[] = ['type' => 'data', 'label' => $child['nama'], 'vals' => $child['bulan']];
+                    for ($b = 1; $b <= 12; $b++) $parentTot[$b] += $child['bulan'][$b] ?? 0.0;
+                }
+
+                $rows[] = ['type' => 'subtotal', 'label' => 'Jumlah ' . $parent['nama'], 'vals' => $parentTot];
+                for ($b = 1; $b <= 12; $b++) $danaTot[$b] += $parentTot[$b];
             }
 
-            if (array_sum($subtotal) == 0) continue;
+            $rows[] = ['type' => 'dana_total', 'label' => 'TOTAL ' . strtoupper($dana['nama']), 'vals' => $danaTot];
+            $rows[] = ['type' => 'spacer',     'label' => '', 'vals' => $zero12];
 
-            $rows[] = ['type' => 'section', 'label' => strtoupper($groupName), 'vals' => $zero12];
-            foreach ($dataRows as $dr) {
-                $rows[] = ['type' => 'data', 'label' => $dr['label'], 'vals' => $dr['vals']];
-            }
-            $rows[] = ['type' => 'subtotal', 'label' => 'Jumlah ' . $groupName, 'vals' => $subtotal];
-            $rows[] = ['type' => 'spacer', 'label' => '', 'vals' => $zero12];
-
-            for ($b = 1; $b <= 12; $b++) $grandTotal[$b] += $subtotal[$b];
+            $danaTotal[$dana['kode']] = array_sum($danaTot);
+            for ($b = 1; $b <= 12; $b++) $grandTotal[$b] += $danaTot[$b];
         }
 
-        $rows[] = ['type' => 'total', 'label' => 'TOTAL PENGHIMPUNAN ZIS', 'vals' => $grandTotal];
-
-        $totalZakat = $getRow(array_merge(
-            $groups['Zakat Maal'] ?? [],
-            $groups['Zakat Fitrah'] ?? [],
-            $groups['Bagi Hasil'] ?? []
-        ));
-        $totalInfak = $getRow($groups['Infak'] ?? []);
+        $rows[] = ['type' => 'total', 'label' => 'GRAND TOTAL PENGHIMPUNAN', 'vals' => $grandTotal];
 
         return view('penerimaan/laporan', [
             'pageTitle'   => 'Laporan Penghimpunan ZIS',
@@ -300,8 +281,9 @@ class Penerimaan extends BaseController
             'bulanNames'  => $bulanNames,
             'rows'        => $rows,
             'grandTotal'  => $grandTotal,
-            'totalZakat'  => array_sum($totalZakat),
-            'totalInfak'  => array_sum($totalInfak),
+            'danaTotal'   => $danaTotal,
+            'totalZakat'  => $danaTotal['ZAKAT']    ?? 0,
+            'totalInfak'  => ($danaTotal['INFAK_T'] ?? 0) + ($danaTotal['INFAK_TT'] ?? 0),
             'totalAll'    => array_sum($grandTotal),
         ]);
     }
