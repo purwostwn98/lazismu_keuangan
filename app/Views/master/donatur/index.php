@@ -5,6 +5,11 @@
 $errors  = session('errors')  ?? [];
 $success = session('success') ?? '';
 $error   = session('error')   ?? '';
+$total   = $total ?? 0;
+$individu = $individu ?? 0;
+$lembaga = $lembaga ?? 0;
+$aktif = $aktif ?? 0;
+$kategori = $kategori ?? [];
 ?>
 
 <?php if ($success): ?>
@@ -380,15 +385,15 @@ $error   = session('error')   ?? '';
         const form = document.getElementById('formEdit');
         form.action = '<?= base_url('master/donatur/update/') ?>' + data.id;
 
-        document.getElementById('edit_nama').value        = data.nama;
-        document.getElementById('edit_jenis').value       = data.jenis;
+        document.getElementById('edit_nama').value = data.nama;
+        document.getElementById('edit_jenis').value = data.jenis;
         document.getElementById('edit_kategori_id').value = data.kategori_id ?? '';
-        document.getElementById('edit_nip').value         = data.nip ?? '';
-        document.getElementById('edit_no_hp').value       = data.no_hp ?? '';
-        document.getElementById('edit_email').value       = data.email ?? '';
-        document.getElementById('edit_alamat').value      = data.alamat ?? '';
-        document.getElementById('edit_kode').value        = data.kode;
-        document.getElementById('edit_is_aktif').checked  = data.is_aktif == 1;
+        document.getElementById('edit_nip').value = data.nip ?? '';
+        document.getElementById('edit_no_hp').value = data.no_hp ?? '';
+        document.getElementById('edit_email').value = data.email ?? '';
+        document.getElementById('edit_alamat').value = data.alamat ?? '';
+        document.getElementById('edit_kode').value = data.kode;
+        document.getElementById('edit_is_aktif').checked = data.is_aktif == 1;
 
         new bootstrap.Modal(document.getElementById('modalEdit')).show();
     }
@@ -421,7 +426,7 @@ $error   = session('error')   ?? '';
     function applyFilters(jenis, search) {
         var q = search.toLowerCase().trim();
         document.querySelectorAll('#tblDonatur tbody tr').forEach(function(row) {
-            var matchJenis  = jenis === 'all' || row.dataset.jenis === jenis;
+            var matchJenis = jenis === 'all' || row.dataset.jenis === jenis;
             var matchSearch = q === '' || (row.dataset.search || '').includes(q);
             row.style.display = (matchJenis && matchSearch) ? '' : 'none';
         });

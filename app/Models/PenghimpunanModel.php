@@ -31,6 +31,8 @@ class PenghimpunanModel extends Model
         'infak_sabtu_seribu'       => 'Infak Sabtu Seribu',
         'infak_bagi_hasil'         => 'Bagi Hasil — Infak',
         'dana_non_halal'           => 'Dana Non Halal',
+        'amil_zakat'               => 'Amil — Zakat',
+        'amil_infak'               => 'Amil — Infak / Sedekah',
     ];
 
     public const JENIS_ZIS_GROUPS = [
@@ -43,6 +45,7 @@ class PenghimpunanModel extends Model
         'Bagi Hasil'     => ['zakat_bagi_hasil', 'infak_bagi_hasil'],
         'Infak'          => ['infak_terikat', 'infak_tidak_terikat_umum', 'infak_kotak', 'infak_sabtu_seribu'],
         'Dana Non Halal' => ['dana_non_halal'],
+        'Amil'           => ['amil_zakat', 'amil_infak'],
     ];
 
     public function getDaftar(array $filter = []): array

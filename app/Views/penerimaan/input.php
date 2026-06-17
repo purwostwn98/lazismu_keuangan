@@ -104,6 +104,68 @@
                     </div>
                 </div>
 
+                <!-- ─── Bagian: Jenis Dana, ZIS & Jumlah ─── -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-transparent border-bottom py-2">
+                        <span class="fw-semibold small text-uppercase text-muted">
+                            <i class="fa fa-star-and-crescent me-1"></i> Jenis & Jumlah
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Jenis Dana -->
+                            <div class="col-12 col-md-4">
+                                <label class="form-label form-label-sm fw-semibold">
+                                    Jenis Dana <span class="text-danger">*</span>
+                                </label>
+                                <select name="jenis_dana_id" id="jenisDanaId" class="form-select form-select-sm" required>
+                                    <option value="">— Pilih Jenis Dana —</option>
+                                    <?php foreach ($jenisDanaList as $jd): ?>
+                                        <option value="<?= $jd['id'] ?>"
+                                            <?= old('jenis_dana_id') == $jd['id'] ? 'selected' : '' ?>>
+                                            <?= esc($jd['nama']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Dana yang menerima penerimaan ini.</div>
+                            </div>
+
+                            <!-- Jenis ZIS -->
+                            <div class="col-12 col-md-5">
+                                <label class="form-label form-label-sm fw-semibold">
+                                    Jenis ZIS <span class="text-danger">*</span>
+                                </label>
+                                <select name="jenis_zis" id="jenisZis" class="form-select form-select-sm"
+                                    required onchange="onJenisZisChange()">
+                                    <option value="">— Pilih Jenis ZIS —</option>
+                                    <?php foreach ($jenisZisGroups as $groupName => $items): ?>
+                                        <optgroup label="<?= esc($groupName) ?>">
+                                            <?php foreach ($items as $key): ?>
+                                                <option value="<?= $key ?>"
+                                                    <?= old('jenis_zis') === $key ? 'selected' : '' ?>>
+                                                    <?= esc($jenisZisLabels[$key]) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Jumlah -->
+                            <div class="col-12 col-md-3">
+                                <label class="form-label form-label-sm fw-semibold">
+                                    Jumlah (Rp) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="jumlah" id="jumlah"
+                                    class="form-control form-control-sm"
+                                    value="<?= old('jumlah') ?>"
+                                    min="1" step="any" required
+                                    placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ─── Bagian: Donatur & Kategori ─── -->
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-header bg-transparent border-bottom py-2">
@@ -113,24 +175,6 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <!-- Donatur -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label form-label-sm fw-semibold">
-                                    Donatur <span class="text-muted fw-normal">(opsional)</span>
-                                </label>
-                                <div class="position-relative">
-                                    <input type="text" id="donaturSearch"
-                                        class="form-control form-control-sm"
-                                        placeholder="Ketik nama atau kode donatur..."
-                                        autocomplete="off">
-                                    <input type="hidden" name="donatur_id" id="donaturId"
-                                        value="<?= old('donatur_id') ?>">
-                                    <div id="donaturDropdown" class="dropdown-menu w-100 shadow-sm p-0"
-                                        style="max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
-                                </div>
-                                <div class="form-text">Kosongkan jika donatur anonim / tidak tercatat.</div>
-                            </div>
-
                             <!-- Kategori -->
                             <div class="col-12 col-md-6">
                                 <label class="form-label form-label-sm fw-semibold">
@@ -157,67 +201,23 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- ─── Bagian: Jenis ZIS & Jumlah ─── -->
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-transparent border-bottom py-2">
-                        <span class="fw-semibold small text-uppercase text-muted">
-                            <i class="fa fa-star-and-crescent me-1"></i> Jenis & Jumlah
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Jenis ZIS -->
-                            <div class="col-12 col-md-5">
+                            <!-- Donatur -->
+                            <div class="col-12 col-md-6">
                                 <label class="form-label form-label-sm fw-semibold">
-                                    Jenis ZIS <span class="text-danger">*</span>
+                                    Donatur <span class="text-muted fw-normal">(opsional)</span>
                                 </label>
-                                <select name="jenis_zis" id="jenisZis" class="form-select form-select-sm"
-                                    required onchange="onJenisZisChange()">
-                                    <option value="">— Pilih Jenis ZIS —</option>
-                                    <?php foreach ($jenisZisGroups as $groupName => $items): ?>
-                                        <optgroup label="<?= esc($groupName) ?>">
-                                            <?php foreach ($items as $key): ?>
-                                                <option value="<?= $key ?>"
-                                                    <?= old('jenis_zis') === $key ? 'selected' : '' ?>>
-                                                    <?= esc($jenisZisLabels[$key]) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </optgroup>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <!-- Jenis Dana -->
-                            <div class="col-12 col-md-4">
-                                <label class="form-label form-label-sm fw-semibold">
-                                    Jenis Dana <span class="text-danger">*</span>
-                                </label>
-                                <select name="jenis_dana_id" id="jenisDanaId" class="form-select form-select-sm" required>
-                                    <option value="">— Pilih Jenis Dana —</option>
-                                    <?php foreach ($jenisDanaList as $jd): ?>
-                                        <option value="<?= $jd['id'] ?>"
-                                            <?= old('jenis_dana_id') == $jd['id'] ? 'selected' : '' ?>>
-                                            <?= esc($jd['nama']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <div class="form-text">Dana yang menerima penerimaan ini.</div>
-                            </div>
-
-                            <!-- Jumlah -->
-                            <div class="col-12 col-md-3">
-                                <label class="form-label form-label-sm fw-semibold">
-                                    Jumlah (Rp) <span class="text-danger">*</span>
-                                </label>
-                                <input type="number" name="jumlah" id="jumlah"
-                                    class="form-control form-control-sm"
-                                    value="<?= old('jumlah') ?>"
-                                    min="1" step="any" required
-                                    placeholder="0">
+                                <div class="position-relative">
+                                    <input type="text" id="donaturSearch"
+                                        class="form-control form-control-sm"
+                                        placeholder="Ketik nama atau kode donatur..."
+                                        autocomplete="off">
+                                    <input type="hidden" name="donatur_id" id="donaturId"
+                                        value="<?= old('donatur_id') ?>">
+                                    <div id="donaturDropdown" class="dropdown-menu w-100 shadow-sm p-0"
+                                        style="max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
+                                </div>
+                                <div class="form-text">Kosongkan jika donatur anonim / tidak tercatat.</div>
                             </div>
                         </div>
                     </div>
