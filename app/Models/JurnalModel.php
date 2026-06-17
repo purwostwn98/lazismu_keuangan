@@ -14,6 +14,7 @@ class JurnalModel extends Model
         'jenis_transaksi', 'uraian', 'keterangan',
         'donatur_id', 'penerima_id', 'program_id',
         'total_debet', 'total_kredit', 'created_by',
+        'ref_jurnal_id',
     ];
     protected $useTimestamps = true;
 

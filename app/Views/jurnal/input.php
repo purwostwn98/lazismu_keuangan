@@ -20,7 +20,13 @@ $periodeAktif  = $periodeAktif  ?? null;
 $jenisDanaList = $jenisDanaList ?? [];
 $akunList      = $akunList      ?? [];
 $rekeningList  = $rekeningList  ?? [];
+$refJurnal     = $refJurnal     ?? null;
+$prefillRows   = $prefillRows   ?? [];
 $old           = fn(string $k, $def = '') => old($k, $def);
+
+$defJenisTrx  = $refJurnal ? 'koreksi' : 'biaya';
+$defJenisDana = $refJurnal ? $refJurnal['jenis_dana_id'] : '';
+$defUraian    = $refJurnal ? 'Pembalik [' . $refJurnal['nomor_jurnal'] . ']: ' . $refJurnal['uraian'] : '';
 ?>
 
 <div class="container-fluid">
@@ -54,8 +60,21 @@ $old           = fn(string $k, $def = '') => old($k, $def);
         </div>
     <?php endif; ?>
 
+    <?php if ($refJurnal): ?>
+        <div class="alert alert-info py-2 small mb-3 d-flex align-items-center gap-2">
+            <i class="fa fa-rotate-left fa-lg"></i>
+            <div>
+                Membalik jurnal <strong><?= esc($refJurnal['nomor_jurnal']) ?></strong>
+                — <?= esc($refJurnal['uraian']) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <form method="post" action="<?= base_url('jurnal/store') ?>" id="frmJurnal">
     <?= csrf_field() ?>
+    <?php if ($refJurnal): ?>
+        <input type="hidden" name="ref_jurnal_id" value="<?= $refJurnal['id'] ?>">
+    <?php endif; ?>
 
     <!-- ── Header ──────────────────────────────────────────── -->
     <div class="card border-0 shadow-sm mb-3">
@@ -87,7 +106,7 @@ $old           = fn(string $k, $def = '') => old($k, $def);
                         <option value="">— Pilih Dana —</option>
                         <?php foreach ($jenisDanaList as $jd): ?>
                             <option value="<?= $jd['id'] ?>"
-                                <?= $old('jenis_dana_id') == $jd['id'] ? 'selected' : '' ?>>
+                                <?= $old('jenis_dana_id', $defJenisDana) == $jd['id'] ? 'selected' : '' ?>>
                                 <?= esc($jd['nama']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -96,16 +115,16 @@ $old           = fn(string $k, $def = '') => old($k, $def);
                 <div class="col-sm-3">
                     <label class="form-label small fw-semibold">Jenis Transaksi <span class="text-danger">*</span></label>
                     <select name="jenis_transaksi" class="form-select form-select-sm" required>
-                        <option value="biaya"       <?= $old('jenis_transaksi','biaya') === 'biaya'       ? 'selected' : '' ?>>Biaya Operasional</option>
-                        <option value="jurnal_umum" <?= $old('jenis_transaksi','biaya') === 'jurnal_umum' ? 'selected' : '' ?>>Jurnal Umum / Penyesuaian</option>
-                        <option value="koreksi"     <?= $old('jenis_transaksi','biaya') === 'koreksi'     ? 'selected' : '' ?>>Jurnal Koreksi</option>
+                        <option value="biaya"       <?= $old('jenis_transaksi', $defJenisTrx) === 'biaya'       ? 'selected' : '' ?>>Biaya Operasional</option>
+                        <option value="jurnal_umum" <?= $old('jenis_transaksi', $defJenisTrx) === 'jurnal_umum' ? 'selected' : '' ?>>Jurnal Umum / Penyesuaian</option>
+                        <option value="koreksi"     <?= $old('jenis_transaksi', $defJenisTrx) === 'koreksi'     ? 'selected' : '' ?>>Jurnal Koreksi</option>
                     </select>
                 </div>
                 <div class="col-sm-8">
                     <label class="form-label small fw-semibold">Uraian <span class="text-danger">*</span></label>
                     <input type="text" name="uraian" class="form-control form-control-sm"
                            placeholder="Deskripsi singkat transaksi" maxlength="255"
-                           value="<?= esc($old('uraian')) ?>" required>
+                           value="<?= esc($old('uraian', $defUraian)) ?>" required>
                 </div>
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Keterangan</label>
@@ -172,15 +191,28 @@ $old           = fn(string $k, $def = '') => old($k, $def);
 <script>
 (function () {
     // ── Data from PHP ──────────────────────────────────────────
+    const periodeData = <?= json_encode(array_map(fn($p) => [
+        'id'    => $p['id'],
+        'bulan' => (int)$p['bulan'],
+        'tahun' => (int)$p['tahun'],
+    ], $periodeList)) ?>;
+
     const akunOptions = <?= json_encode(array_map(fn($a) => [
         'id'    => $a['id'],
         'label' => $a['nomor_akun'] . ' — ' . $a['nama_akun'],
     ], $akunList)) ?>;
 
     const rekOptions = <?= json_encode(array_map(fn($r) => [
-        'id'    => $r['id'],
-        'label' => $r['nama'] . ' (' . $r['nama_dana'] . ')',
+        'id'     => $r['id'],
+        'label'  => $r['nama'] . ' (' . $r['nama_dana'] . ')',
+        'akunId' => (int)($r['akun_id'] ?? 0),
     ], $rekeningList)) ?>;
+
+    // Lookup: akun.id → rekening_bank.id (hanya akun yang punya rekening)
+    const akunToRek = {};
+    rekOptions.forEach(r => { if (r.akunId) akunToRek[r.akunId] = String(r.id); });
+
+    const prefillRows = <?= json_encode($prefillRows) ?>;
 
     // ── Helpers ────────────────────────────────────────────────
     function fmtNum(n) {
@@ -206,7 +238,7 @@ $old           = fn(string $k, $def = '') => old($k, $def);
     // ── Add row ────────────────────────────────────────────────
     let rowCount = 0;
 
-    function addRow() {
+    function addRow(prefill = null) {
         rowCount++;
         const tbody = document.getElementById('detailBody');
         const tr = document.createElement('tr');
@@ -226,9 +258,31 @@ $old           = fn(string $k, $def = '') => old($k, $def);
         tbody.appendChild(tr);
 
         // Tom Select on new row selects
-        tr.querySelectorAll('select').forEach(sel => {
-            new TomSelect(sel, { maxOptions: 500, allowEmptyOption: true });
+        const selects = tr.querySelectorAll('select');
+        const tsAkun = new TomSelect(selects[0], { maxOptions: 500, allowEmptyOption: true });
+        const tsRek  = new TomSelect(selects[1], { maxOptions: 500, allowEmptyOption: true });
+
+        // Auto-fill rekening saat akun yang punya rekening dipilih
+        tsAkun.on('change', function (val) {
+            const rekId = akunToRek[val];
+            if (rekId !== undefined) tsRek.setValue(rekId);
         });
+
+        // Pre-fill dari data pembalik
+        if (prefill) {
+            if (prefill.akun_id) tsAkun.setValue(String(prefill.akun_id));
+            // Override rekening: gunakan persis nilai dari jurnal asal
+            if (prefill.rekening_id) {
+                tsRek.setValue(String(prefill.rekening_id));
+            } else {
+                tsRek.clear();
+            }
+            tr.querySelector('[name="uraian_det[]"]').value = prefill.uraian_det || '';
+            const fmt = v => v > 0 ? new Intl.NumberFormat('id-ID').format(v) : '';
+            tr.querySelector('.debet-col').value  = fmt(prefill.debet);
+            tr.querySelector('.kredit-col').value = fmt(prefill.kredit);
+            recalculate();
+        }
 
         // Delete row
         tr.querySelector('.btn-del-row').addEventListener('click', function () {
@@ -289,10 +343,28 @@ $old           = fn(string $k, $def = '') => old($k, $def);
         }
     }
 
+    // ── Sinkronisasi periode dengan tanggal ───────────────────
+    function syncPeriode() {
+        const tgl = document.querySelector('[name="tanggal"]').value;
+        if (!tgl) return;
+        const d     = new Date(tgl);
+        const bulan = d.getMonth() + 1;
+        const tahun = d.getFullYear();
+        const match = periodeData.find(p => p.bulan === bulan && p.tahun === tahun);
+        if (match) document.querySelector('[name="periode_id"]').value = match.id;
+    }
+
+    document.querySelector('[name="tanggal"]').addEventListener('change', syncPeriode);
+    syncPeriode();
+
     // ── Init ──────────────────────────────────────────────────
-    document.getElementById('btnAddRow').addEventListener('click', addRow);
-    addRow();
-    addRow();
+    document.getElementById('btnAddRow').addEventListener('click', () => addRow());
+    if (prefillRows.length > 0) {
+        prefillRows.forEach(r => addRow(r));
+    } else {
+        addRow();
+        addRow();
+    }
 })();
 </script>
 <?= $this->endSection() ?>

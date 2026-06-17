@@ -111,6 +111,41 @@ class Jurnal extends BaseController
         ]);
     }
 
+    // ── Jurnal Pembalik ──────────────────────────────────────
+    public function reverse(int $id)
+    {
+        $jurnal = $this->jurnalModel->find($id);
+        if (!$jurnal) {
+            return redirect()->to('jurnal')->with('error', 'Jurnal tidak ditemukan.');
+        }
+
+        $details = \Config\Database::connect()
+            ->table('jurnal_detail')
+            ->select('akun_id, rekening_bank_id, uraian, debet, kredit')
+            ->where('jurnal_id', $id)
+            ->orderBy('id', 'ASC')
+            ->get()->getResultArray();
+
+        $periodeAktif = $this->periodeModel->findByTanggal(date('Y-m-d'));
+
+        return view('jurnal/input', [
+            'pageTitle'     => 'Jurnal Pembalik',
+            'periodeList'   => $this->periodeModel->getAktif(),
+            'periodeAktif'  => $periodeAktif,
+            'jenisDanaList' => $this->jenisDanaModel->getAll(),
+            'akunList'      => $this->akunModel->where('is_header', 0)->orderBy('nomor_akun', 'ASC')->findAll(),
+            'rekeningList'  => $this->rekeningModel->getAktif(),
+            'refJurnal'     => $jurnal,
+            'prefillRows'   => array_map(fn($d) => [
+                'akun_id'     => (int)$d['akun_id'],
+                'rekening_id' => $d['rekening_bank_id'] ? (int)$d['rekening_bank_id'] : 0,
+                'uraian_det'  => $d['uraian'] ?? '',
+                'debet'       => (float)$d['kredit'],
+                'kredit'      => (float)$d['debet'],
+            ], $details),
+        ]);
+    }
+
     // ── Form Input Jurnal ────────────────────────────────────
     public function input(): string
     {
@@ -194,6 +229,7 @@ class Jurnal extends BaseController
 
         $jenisTrx    = $this->request->getPost('jenis_transaksi');
         $nomorJurnal = $this->jurnalModel->generateNomor($jenisTrx);
+        $refJurnalId = (int)($this->request->getPost('ref_jurnal_id') ?? 0) ?: null;
 
         $db = \Config\Database::connect();
         $db->transStart();
@@ -209,6 +245,7 @@ class Jurnal extends BaseController
             'total_debet'     => $totalDebet,
             'total_kredit'    => $totalKredit,
             'created_by'      => null,
+            'ref_jurnal_id'   => $refJurnalId,
         ]);
         $jurnalId = $this->jurnalModel->getInsertID();
 

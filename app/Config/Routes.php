@@ -104,7 +104,8 @@ $routes->get('biaya/(:num)',                'BiayaOperasional::show/$1');
 $routes->get('jurnal',               'Jurnal::index');
 $routes->get('jurnal/input',         'Jurnal::input');
 $routes->post('jurnal/store',        'Jurnal::store');
-$routes->get('jurnal/delete/(:num)', 'Jurnal::delete/$1');
+$routes->get('jurnal/delete/(:num)',  'Jurnal::delete/$1');
+$routes->get('jurnal/reverse/(:num)', 'Jurnal::reverse/$1');
 
 // Mutasi / Transfer Rekening
 $routes->get('mutasi',               'Mutasi::index');

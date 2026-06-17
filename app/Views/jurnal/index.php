@@ -215,7 +215,7 @@ function fmtRp(float $v): string
                             <th>Uraian</th>
                             <th class="num-right">Debet (Rp)</th>
                             <th class="num-right">Kredit (Rp)</th>
-                            <th style="width:80px;" class="text-center">Aksi</th>
+                            <th style="width:90px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,8 +229,9 @@ function fmtRp(float $v): string
                         <?php else: ?>
                             <?php foreach ($jurnalList as $idx => $j):
                                 $badge     = $tipeBadge[$j['jenis_transaksi']] ?? ['label' => $j['jenis_transaksi'], 'class' => 'badge-secondary'];
-                                $canDelete = in_array($j['jenis_transaksi'], ['biaya', 'jurnal_umum', 'koreksi']) && !$j['is_tutup'];
-                                $rowId     = 'det-' . $j['id'];
+                                $canDelete  = in_array($j['jenis_transaksi'], ['biaya', 'jurnal_umum', 'koreksi']) && !$j['is_tutup'];
+                                $canReverse = in_array($j['jenis_transaksi'], ['biaya', 'jurnal_umum', 'koreksi', 'penerimaan', 'penyaluran', 'transfer']);
+                                $rowId      = 'det-' . $j['id'];
                             ?>
                                 <!-- Header row (clickable) -->
                                 <tr class="jurnal-header" data-bs-toggle="collapse"
@@ -250,18 +251,27 @@ function fmtRp(float $v): string
                                     <td class="num-right"><?= fmtRp($j['total_debet']) ?></td>
                                     <td class="num-right"><?= fmtRp($j['total_kredit']) ?></td>
                                     <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                        <?php if ($canReverse): ?>
+                                            <a href="<?= base_url('jurnal/reverse/' . $j['id']) ?>"
+                                               class="btn btn-outline-warning btn-sm py-0 px-1"
+                                               title="Buat Jurnal Pembalik">
+                                                <i class="fa fa-rotate-left fa-xs"></i>
+                                            </a>
+                                        <?php endif; ?>
                                         <?php if ($canDelete): ?>
                                             <a href="<?= base_url('jurnal/delete/' . $j['id']) ?>"
-                                                class="btn btn-outline-danger btn-sm py-0 px-1"
-                                                onclick="return confirm('Hapus jurnal <?= esc($j['nomor_jurnal']) ?>?')"
-                                                title="Hapus">
+                                               class="btn btn-outline-danger btn-sm py-0 px-1"
+                                               onclick="return confirm('Hapus jurnal <?= esc($j['nomor_jurnal']) ?>?')"
+                                               title="Hapus">
                                                 <i class="fa fa-trash fa-xs"></i>
                                             </a>
                                         <?php elseif ($j['is_tutup']): ?>
                                             <i class="fa fa-lock text-secondary" title="Periode terkunci"></i>
-                                        <?php else: ?>
+                                        <?php elseif (!$canReverse): ?>
                                             <i class="fa fa-shield-halved text-secondary" title="Dikelola modul lain"></i>
                                         <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
 
