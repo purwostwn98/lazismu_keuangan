@@ -20,8 +20,9 @@ $periodeAktif  = $periodeAktif  ?? null;
 $jenisDanaList = $jenisDanaList ?? [];
 $akunList      = $akunList      ?? [];
 $rekeningList  = $rekeningList  ?? [];
-$refJurnal     = $refJurnal     ?? null;
-$prefillRows   = $prefillRows   ?? [];
+$refJurnal              = $refJurnal              ?? null;
+$refJurnalIsPenerimaan  = $refJurnalIsPenerimaan  ?? false;
+$prefillRows            = $prefillRows            ?? [];
 $old           = fn(string $k, $def = '') => old($k, $def);
 
 $defJenisTrx  = $refJurnal ? 'koreksi' : 'biaya';
@@ -61,11 +62,18 @@ $defUraian    = $refJurnal ? 'Pembalik [' . $refJurnal['nomor_jurnal'] . ']: ' .
     <?php endif; ?>
 
     <?php if ($refJurnal): ?>
-        <div class="alert alert-info py-2 small mb-3 d-flex align-items-center gap-2">
+        <div class="alert alert-<?= $refJurnalIsPenerimaan ? 'warning' : 'info' ?> py-2 small mb-3 d-flex align-items-center gap-2">
             <i class="fa fa-rotate-left fa-lg"></i>
             <div>
                 Membalik jurnal <strong><?= esc($refJurnal['nomor_jurnal']) ?></strong>
                 — <?= esc($refJurnal['uraian']) ?>
+                <?php if ($refJurnalIsPenerimaan): ?>
+                    <br><span class="text-warning-emphasis fw-semibold">
+                        <i class="fa fa-triangle-exclamation me-1"></i>
+                        Jurnal ini adalah <strong>Penerimaan</strong>. Sistem akan otomatis membuat entri pembalik
+                        pada tabel penghimpunan sehingga laporan ZIS terkoreksi.
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>

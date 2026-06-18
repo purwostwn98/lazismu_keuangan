@@ -129,14 +129,15 @@ class Jurnal extends BaseController
         $periodeAktif = $this->periodeModel->findByTanggal(date('Y-m-d'));
 
         return view('jurnal/input', [
-            'pageTitle'     => 'Jurnal Pembalik',
-            'periodeList'   => $this->periodeModel->getAktif(),
-            'periodeAktif'  => $periodeAktif,
-            'jenisDanaList' => $this->jenisDanaModel->getAll(),
-            'akunList'      => $this->akunModel->where('is_header', 0)->orderBy('nomor_akun', 'ASC')->findAll(),
-            'rekeningList'  => $this->rekeningModel->getAktif(),
-            'refJurnal'     => $jurnal,
-            'prefillRows'   => array_map(fn($d) => [
+            'pageTitle'              => 'Jurnal Pembalik',
+            'periodeList'            => $this->periodeModel->getAktif(),
+            'periodeAktif'           => $periodeAktif,
+            'jenisDanaList'          => $this->jenisDanaModel->getAll(),
+            'akunList'               => $this->akunModel->where('is_header', 0)->orderBy('nomor_akun', 'ASC')->findAll(),
+            'rekeningList'           => $this->rekeningModel->getAktif(),
+            'refJurnal'              => $jurnal,
+            'refJurnalIsPenerimaan'  => $jurnal['jenis_transaksi'] === 'penerimaan',
+            'prefillRows'            => array_map(fn($d) => [
                 'akun_id'     => (int)$d['akun_id'],
                 'rekening_id' => $d['rekening_bank_id'] ? (int)$d['rekening_bank_id'] : 0,
                 'uraian_det'  => $d['uraian'] ?? '',
@@ -254,13 +255,43 @@ class Jurnal extends BaseController
         }
         $db->table('jurnal_detail')->insertBatch($details);
 
+        // Jika koreksi mereferensi jurnal penerimaan → buat pembalik penghimpunan
+        $reversalCount = 0;
+        if ($jenisTrx === 'koreksi' && $refJurnalId) {
+            $refJurnal = $this->jurnalModel->find($refJurnalId);
+            if ($refJurnal && $refJurnal['jenis_transaksi'] === 'penerimaan') {
+                $origRows = $db->table('penghimpunan')
+                    ->where('jurnal_id', $refJurnalId)
+                    ->get()->getResultArray();
+
+                $now2 = date('Y-m-d H:i:s');
+                foreach ($origRows as $orig) {
+                    $db->table('penghimpunan')->insert([
+                        'periode_id'  => $periodeId,
+                        'donatur_id'  => $orig['donatur_id'],
+                        'kategori_id' => $orig['kategori_id'],
+                        'jenis_zis'   => $orig['jenis_zis'],
+                        'jumlah'      => -(float)$orig['jumlah'],
+                        'jurnal_id'   => $jurnalId,
+                        'created_at'  => $now2,
+                        'updated_at'  => $now2,
+                    ]);
+                    $reversalCount++;
+                }
+            }
+        }
+
         $db->transComplete();
 
         if (! $db->transStatus()) {
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan jurnal.');
         }
 
-        return redirect()->to('jurnal')->with('success', "Jurnal {$nomorJurnal} berhasil disimpan.");
+        $msg = "Jurnal {$nomorJurnal} berhasil disimpan.";
+        if ($reversalCount > 0) {
+            $msg .= " ({$reversalCount} entri penghimpunan dibalik otomatis.)";
+        }
+        return redirect()->to('jurnal')->with('success', $msg);
     }
 
     // ── Hapus Jurnal ─────────────────────────────────────────

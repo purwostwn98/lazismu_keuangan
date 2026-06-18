@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 <?php
-$donatur = $donatur ?? null;
+$donatur = $donatur ?? (object) [];
 $success = $success ?? '';
 $error   = $error   ?? '';
 ?>
@@ -71,10 +71,10 @@ $error   = $error   ?? '';
                         </td>
                     </tr>
                     <?php if ($donatur->nip ?? ''): ?>
-                    <tr>
-                        <td class="text-muted">NIP</td>
-                        <td><?= esc($donatur->nip) ?></td>
-                    </tr>
+                        <tr>
+                            <td class="text-muted">NIP</td>
+                            <td><?= esc($donatur->nip) ?></td>
+                        </tr>
                     <?php endif; ?>
                 </table>
             </div>
