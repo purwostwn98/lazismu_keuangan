@@ -2,14 +2,15 @@
 <?= $this->section('content') ?>
 
 <?php
-$errors  = session('errors')  ?? [];
-$success = session('success') ?? '';
-$error   = session('error')   ?? '';
-$total   = $total ?? 0;
+$errors   = session('errors')  ?? [];
+$success  = session('success') ?? '';
+$error    = session('error')   ?? '';
+$total    = $total    ?? 0;
 $individu = $individu ?? 0;
-$lembaga = $lembaga ?? 0;
-$aktif = $aktif ?? 0;
+$lembaga  = $lembaga  ?? 0;
+$aktif    = $aktif    ?? 0;
 $kategori = $kategori ?? [];
+$akunMap  = $akunMap  ?? [];
 ?>
 
 <?php if ($success): ?>
@@ -118,6 +119,7 @@ $kategori = $kategori ?? [];
                         <th class="text-center" style="width:90px;">Jenis</th>
                         <th>Kategori</th>
                         <th>Kontak</th>
+                        <th class="text-center" style="width:90px;">Akun Login</th>
                         <th class="text-center" style="width:80px;">Status</th>
                         <th class="text-center" style="width:90px;">Aksi</th>
                     </tr>
@@ -125,7 +127,7 @@ $kategori = $kategori ?? [];
                 <tbody>
                     <?php if (empty($donatur)): ?>
                         <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
+                            <td colspan="9" class="text-center py-4 text-muted">
                                 <i class="fas fa-inbox fa-2x d-block mb-2"></i>Belum ada data donatur.
                             </td>
                         </tr>
@@ -169,6 +171,32 @@ $kategori = $kategori ?? [];
                                     <?php endif; ?>
                                     <?php if (! $d['nip'] && ! $d['no_hp'] && ! $d['email']): ?>
                                         <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php $akun = $akunMap[$d['id']] ?? null; ?>
+                                    <?php if ($akun): ?>
+                                        <div>
+                                            <span class="badge bg-success" style="font-size:.7rem;">
+                                                <i class="fas fa-check me-1"></i>Ada
+                                            </span>
+                                        </div>
+                                        <div style="font-size:.7rem;" class="text-muted mt-1">
+                                            <code><?= esc($akun['username']) ?></code>
+                                        </div>
+                                        <a href="<?= base_url('master/donatur/hapus-akun/' . $d['id']) ?>"
+                                            class="text-danger" style="font-size:.68rem;"
+                                            title="Hapus akun login"
+                                            onclick="return confirm('Hapus akun login <?= esc(addslashes($d['nama'])) ?>?')">
+                                            <i class="fas fa-trash"></i> Hapus Akun
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                                            style="font-size:.72rem;"
+                                            onclick="openBuatAkun(<?= $d['id'] ?>, '<?= esc(addslashes($d['nama'])) ?>', '<?= esc(addslashes($d['email'] ?? '')) ?>')"
+                                            title="Buat akun login">
+                                            <i class="fas fa-user-plus me-1"></i>Buat Akun
+                                        </button>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -437,6 +465,63 @@ $kategori = $kategori ?? [];
             new bootstrap.Modal(document.getElementById('modalTambah')).show();
         });
     <?php endif; ?>
+
+    // ─── Buat Akun Login ──────────────────────────────────────────
+    function openBuatAkun(id, nama, email) {
+        document.getElementById('buat_akun_nama').textContent = nama;
+        document.getElementById('buat_akun_form').action =
+            '<?= base_url('master/donatur/buat-akun/') ?>' + id;
+        document.getElementById('buat_akun_email').value = email;
+        new bootstrap.Modal(document.getElementById('modalBuatAkun')).show();
+    }
 </script>
+
+<!-- ===================== MODAL BUAT AKUN LOGIN ===================== -->
+<div class="modal fade" id="modalBuatAkun" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="buat_akun_form" method="post">
+                <?= csrf_field() ?>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2 text-primary"></i>
+                        Buat Akun Login Donatur
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size:.85rem;">
+                        Buat akun login untuk:
+                        <strong id="buat_akun_nama" class="text-dark"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                        <input type="text" name="username" class="form-control"
+                            placeholder="Huruf, angka, tanda hubung, underscore"
+                            pattern="[a-zA-Z0-9_\-]+" minlength="3" required autofocus>
+                        <div class="form-text">Minimal 3 karakter. Digunakan untuk login.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                        <input type="email" name="email" id="buat_akun_email" class="form-control"
+                            placeholder="Email aktif donatur" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                        <input type="password" name="password" class="form-control"
+                            placeholder="Minimal 6 karakter" minlength="6" required>
+                        <div class="form-text">Berikan password ini kepada donatur bersangkutan.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-1"></i>Buat Akun
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?= $this->endSection() ?>

@@ -42,18 +42,27 @@ class Auth extends BaseController
                 ->with('error', 'Akun Anda dinonaktifkan. Hubungi administrator.');
         }
 
+        $isMuzaki  = (bool) $user['is_muzaki'];
+        $donaturId = $user['donatur_id'] ?? null;
+
         session()->set([
-            'logged_in'   => true,
-            'user_id'     => $user['id'],
-            'user_nama'   => $user['nama'],
-            'user_username' => $user['username'],
-            'user_email'  => $user['email'],
-            'user_role'   => $user['role'],
-            'is_muzaki'   => (bool) $user['is_muzaki'],
-            'is_mustahik' => (bool) $user['is_mustahik'],
+            'logged_in'    => true,
+            'user_id'      => $user['id'],
+            'user_nama'    => $user['nama'],
+            'user_username'=> $user['username'],
+            'user_email'   => $user['email'],
+            'user_role'    => $user['role'],
+            'is_muzaki'    => $isMuzaki,
+            'is_mustahik'  => (bool) $user['is_mustahik'],
+            'donatur_id'   => $donaturId,
         ]);
 
         $model->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
+
+        // Akun donatur: is_muzaki=1 dan punya donatur_id → portal donatur
+        if ($isMuzaki && $donaturId) {
+            return redirect()->to(base_url('donatur/portal'));
+        }
 
         return redirect()->to(base_url('dashboard'));
     }

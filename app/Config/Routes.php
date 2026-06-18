@@ -50,11 +50,14 @@ $routes->post('master/penerima/store',           'Master\PenerimaManfaat::store'
 $routes->post('master/penerima/update/(:num)',   'Master\PenerimaManfaat::update/$1');
 $routes->get('master/penerima/delete/(:num)',    'Master\PenerimaManfaat::delete/$1');
 
-$routes->get('master/donatur',                  'Master\Donatur::index');
-$routes->post('master/donatur/store',           'Master\Donatur::store');
-$routes->post('master/donatur/update/(:num)',   'Master\Donatur::update/$1');
-$routes->get('master/donatur/toggle/(:num)',    'Master\Donatur::toggleAktif/$1');
-$routes->get('master/donatur/delete/(:num)',    'Master\Donatur::delete/$1');
+$routes->get('master/donatur',                      'Master\Donatur::index');
+$routes->get('master/donatur/dashboard',            'Master\Donatur::dashboard');
+$routes->post('master/donatur/store',               'Master\Donatur::store');
+$routes->post('master/donatur/update/(:num)',        'Master\Donatur::update/$1');
+$routes->get('master/donatur/toggle/(:num)',         'Master\Donatur::toggleAktif/$1');
+$routes->get('master/donatur/delete/(:num)',         'Master\Donatur::delete/$1');
+$routes->post('master/donatur/buat-akun/(:num)',     'Master\Donatur::buatAkun/$1');
+$routes->get('master/donatur/hapus-akun/(:num)',     'Master\Donatur::hapusAkun/$1');
 
 $routes->get('master/periode',                 'Master\Periode::index');
 $routes->post('master/periode/store',          'Master\Periode::store');
@@ -124,6 +127,12 @@ $routes->post('pengguna/store',            'Pengguna::store');
 $routes->post('pengguna/update/(:num)',    'Pengguna::update/$1');
 $routes->get('pengguna/toggle/(:num)',     'Pengguna::toggleAktif/$1');
 $routes->get('pengguna/delete/(:num)',     'Pengguna::delete/$1');
+
+// Portal Donatur
+$routes->get('donatur/portal',            'Donatur\Portal::index');
+$routes->get('donatur/profil',            'Donatur\Portal::profil');
+$routes->post('donatur/profil/update',    'Donatur\Portal::updateProfil');
+$routes->post('donatur/ganti-password',   'Donatur\Portal::gantiPassword');
 
 // Auth
 $routes->get('login', 'Auth::index');

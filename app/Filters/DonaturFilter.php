@@ -6,7 +6,7 @@ use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class AuthFilter implements FilterInterface
+class DonaturFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
@@ -14,12 +14,8 @@ class AuthFilter implements FilterInterface
             return redirect()->to(base_url('login'));
         }
 
-        // Akun donatur (is_muzaki=1 + donatur_id) tidak boleh akses admin routes
-        if (session()->get('is_muzaki') && session()->get('donatur_id')) {
-            $seg = service('uri')->getSegment(1);
-            if ($seg !== 'donatur' && $seg !== 'logout') {
-                return redirect()->to(base_url('donatur/portal'));
-            }
+        if (! session()->get('is_muzaki')) {
+            return redirect()->to(base_url('dashboard'));
         }
     }
 

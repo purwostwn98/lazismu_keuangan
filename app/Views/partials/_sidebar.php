@@ -264,6 +264,11 @@ function isOpen(string $seg, array $matches): string
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="<?= base_url('master/donatur/dashboard') ?>" class="nav-link<?= isActive($currentPath, 'master/donatur/dashboard') ?>">
+                            Dashboard Donatur
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="<?= base_url('master/donatur') ?>" class="nav-link<?= isActive($currentPath, 'master/donatur') ?>">
                             Donatur / Muzakki
                         </a>

@@ -4,6 +4,7 @@ namespace Config;
 
 use App\Filters\AuthFilter;
 use App\Filters\BasicAuthFilter;
+use App\Filters\DonaturFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
 use CodeIgniter\Filters\CSRF;
@@ -38,6 +39,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth'          => AuthFilter::class,
         'basicauth'     => BasicAuthFilter::class,
+        'donaturauth'   => DonaturFilter::class,
     ];
 
     /**
@@ -112,6 +114,7 @@ class Filters extends BaseFilters
      * @var array<string, array<string, list<string>>>
      */
     public array $filters = [
-        'basicauth' => ['before' => ['api/penyaluran/*']],
+        'basicauth'   => ['before' => ['api/penyaluran/*']],
+        'donaturauth' => ['before' => ['donatur/*']],
     ];
 }
