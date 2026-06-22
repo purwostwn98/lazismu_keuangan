@@ -44,10 +44,26 @@ class LaporanModel
             ];
         }
 
+        // Cumulative net movements for all periods before $tahun.
+        // Needed for rekening whose saldo_awal was never re-baselined at year-end.
+        $priorMovements = $this->db->table('jurnal_detail jd')
+            ->select('jd.rekening_bank_id, SUM(jd.debet) AS dbt, SUM(jd.kredit) AS krd')
+            ->join('jurnal j',  'j.id = jd.jurnal_id')
+            ->join('periode p', 'p.id = j.periode_id')
+            ->where('p.tahun <', $tahun)
+            ->where('jd.rekening_bank_id >', 0)
+            ->groupBy('jd.rekening_bank_id')
+            ->get()->getResultArray();
+
+        $priorMap = [];
+        foreach ($priorMovements as $m) {
+            $priorMap[(int)$m['rekening_bank_id']] = (float)$m['dbt'] - (float)$m['krd'];
+        }
+
         $result = [];
         foreach ($rekenings as $rek) {
             $id      = (int)$rek['id'];
-            $running = (float)$rek['saldo_awal'];
+            $running = (float)$rek['saldo_awal'] + ($priorMap[$id] ?? 0);
             $balans  = [];
             for ($b = 1; $b <= 12; $b++) {
                 $running += ($movMap[$id][$b]['dbt'] ?? 0) - ($movMap[$id][$b]['krd'] ?? 0);
